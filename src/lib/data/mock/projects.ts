@@ -450,7 +450,7 @@ export const MOCK_PROJECTS: Project[] = [
   done("p-done-pandadoc", "PandaDoc Proposal Templates", {
     slug: "pandadoc-proposal-templates",
     owner: "u-robby",
-    completedDaysAgo: 55,
+    completedDaysAgo: 95,
     goal: "Generate the customer proposal from Salesforce rather than assembling it by hand.",
     hoursSaved: 26,
     processes: 2,
@@ -462,7 +462,7 @@ export const MOCK_PROJECTS: Project[] = [
   done("p-done-bronze-layer", "Fabric Bronze Layer", {
     slug: "fabric-bronze-layer",
     owner: "u-jonathan",
-    completedDaysAgo: 62,
+    completedDaysAgo: 125,
     goal: "Land raw Salesforce extracts in a governed bronze layer instead of ad-hoc queries.",
     hoursSaved: 11,
     processes: 1,
@@ -474,7 +474,7 @@ export const MOCK_PROJECTS: Project[] = [
   done("p-done-sso", "Single Sign-On Consolidation", {
     slug: "single-sign-on-consolidation",
     owner: "u-alexis",
-    completedDaysAgo: 68,
+    completedDaysAgo: 155,
     goal: "Put every system that supports it behind the Google Workspace account.",
     hoursSaved: 13,
     processes: 1,
@@ -486,7 +486,7 @@ export const MOCK_PROJECTS: Project[] = [
   done("p-done-apptoto", "Estimate Scheduling Automation", {
     slug: "estimate-scheduling-automation",
     owner: "u-robby",
-    completedDaysAgo: 76,
+    completedDaysAgo: 185,
     goal: "Book, confirm and remind estimate appointments without anyone touching a calendar.",
     hoursSaved: 34,
     processes: 3,

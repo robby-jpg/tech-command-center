@@ -24,7 +24,7 @@ import {
 import { sla, userById } from "@/lib/selectors";
 import { useActions, useSnapshot } from "@/lib/store/workspace-store";
 import { formatAge } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn, countLabel } from "@/lib/utils";
 import { Dot } from "@/components/ui/badge";
 import {
   PriorityBadge,
@@ -49,7 +49,12 @@ export function TicketKanban({ tickets }: { tickets: Ticket[] }) {
     for (const ticket of tickets) map.get(ticket.status)?.push(ticket);
     return TICKET_STATUS_ORDER.map((status) => ({
       status,
+      // Open columns lead with the most urgent; the closed column leads with
+      // the most recently finished, which is the only part of it worth seeing.
       tickets: (map.get(status) ?? []).sort((a, b) => {
+        if (!TICKET_STATUS_META[status].open) {
+          return (b.resolvedAt ?? "").localeCompare(a.resolvedAt ?? "");
+        }
         const order = { critical: 0, high: 1, normal: 2, low: 3 };
         return (
           order[a.priority] - order[b.priority] ||
@@ -79,6 +84,10 @@ export function TicketKanban({ tickets }: { tickets: Ticket[] }) {
 
   return (
     <DndContext
+      // A stable id keeps dnd-kit from generating different aria-describedby
+      // values on the server and the client, which React reports as a
+      // hydration mismatch.
+      id="ticket-kanban"
       sensors={sensors}
       modifiers={[restrictToWindowEdges]}
       onDragStart={onDragStart}
@@ -106,6 +115,16 @@ export function TicketKanban({ tickets }: { tickets: Ticket[] }) {
   );
 }
 
+/**
+ * Closed work is capped.
+ *
+ * The Resolved column otherwise holds every ticket the department has ever
+ * finished — hundreds of cards nobody scrolls, costing a DOM node each. A board
+ * is for work in motion; the full history is what the table and Analytics are
+ * for.
+ */
+const RESOLVED_COLUMN_LIMIT = 15;
+
 function KanbanColumn({
   status,
   tickets,
@@ -116,10 +135,13 @@ function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const meta = TICKET_STATUS_META[status];
 
+  const capped = meta.open ? tickets : tickets.slice(0, RESOLVED_COLUMN_LIMIT);
+  const hidden = tickets.length - capped.length;
+
   return (
     <section
       ref={setNodeRef}
-      aria-label={`${meta.label} — ${tickets.length} tickets`}
+      aria-label={`${meta.label} — ${countLabel(tickets.length, "ticket")}`}
       className={cn(
         "flex w-72 shrink-0 flex-col rounded-lg border transition-colors",
         isOver
@@ -141,7 +163,16 @@ function KanbanColumn({
             {meta.open ? "Nothing here" : "Nothing resolved yet"}
           </p>
         ) : (
-          tickets.map((ticket) => <DraggableCard key={ticket.id} ticket={ticket} />)
+          <>
+            {capped.map((ticket) => (
+              <DraggableCard key={ticket.id} ticket={ticket} />
+            ))}
+            {hidden > 0 && (
+              <p className="rounded-md border border-dashed border-line px-3 py-3 text-center text-2xs text-fg-subtle">
+                {hidden} more resolved — see the table or Analytics
+              </p>
+            )}
+          </>
         )}
       </div>
     </section>

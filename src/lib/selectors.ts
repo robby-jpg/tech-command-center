@@ -606,25 +606,20 @@ export type TicketAnalytics = {
 export function ticketAnalytics(snap: WorkspaceSnapshot, days = 30): TicketAnalytics {
   const now = new Date(snap.now).getTime();
   const cutoff = now - days * DAY_MS;
-  const priorCutoff = cutoff - days * DAY_MS;
 
   const created = snap.tickets.filter((t) => new Date(t.createdAt).getTime() >= cutoff);
   const resolved = snap.tickets.filter(
     (t) => t.resolvedAt && new Date(t.resolvedAt).getTime() >= cutoff,
   );
-  const priorCreated = snap.tickets.filter((t) => {
-    const at = new Date(t.createdAt).getTime();
-    return at >= priorCutoff && at < cutoff;
-  });
-  const priorResolved = snap.tickets.filter((t) => {
-    if (!t.resolvedAt) return false;
-    const at = new Date(t.resolvedAt).getTime();
-    return at >= priorCutoff && at < cutoff;
-  });
 
+  // Business minutes, matching the clock the first-response target is stated
+  // on. Measured as elapsed time this averaged over thirteen hours, because
+  // every ticket raised in the evening carried the whole night with it.
   const firstResponses = snap.tickets
     .filter((t) => t.firstResponseAt && new Date(t.createdAt).getTime() >= cutoff)
-    .map((t) => (new Date(t.firstResponseAt!).getTime() - new Date(t.createdAt).getTime()) / 60_000);
+    .map((t) =>
+      businessMinutesBetween(new Date(t.createdAt), new Date(t.firstResponseAt!)),
+    );
 
   const resolutionHours = resolved.map(resolutionBusinessHours);
 
@@ -635,8 +630,10 @@ export function ticketAnalytics(snap: WorkspaceSnapshot, days = 30): TicketAnaly
     created: created.length,
     resolved: resolved.length,
     backlog: open.length,
-    backlogChange:
-      created.length - resolved.length - (priorCreated.length - priorResolved.length),
+    // Net flow across the window: how much the queue grew or shrank. Not a
+    // comparison against the previous window — that produced a second
+    // derivative nobody could read against a standing backlog figure.
+    backlogChange: created.length - resolved.length,
     avgFirstResponseMinutes: average(firstResponses),
     avgResolutionHours: average(resolutionHours),
     slaAttainment: resolved.length === 0 ? 100 : (met / resolved.length) * 100,
@@ -874,8 +871,16 @@ export function impactMetrics(snap: WorkspaceSnapshot): ImpactMetrics {
     manualProcessesEliminated: sum(completed.map((p) => p.manualProcessesEliminated)),
     systemsImproved: unique(completed.flatMap((p) => p.systemIds)).length,
     departmentsImpacted: unique(completed.flatMap((p) => p.departmentsImpacted)).length,
-    majorLaunches: completed.filter((p) => p.priority === "critical" || p.priority === "high")
-      .length,
+    // A launch counts as major when it actually changed how the company works:
+    // it removed at least one manual process and returned meaningful time.
+    // Keying this off project priority produced zero, because priority
+    // describes how urgent something was to build, not how much it mattered
+    // once it shipped.
+    majorLaunches: completed.filter(
+      (p) =>
+        p.manualProcessesEliminated > 0 &&
+        (p.actualHoursSavedMonthly ?? p.estimatedHoursSavedMonthly) >= 15,
+    ).length,
     trend,
   };
 }

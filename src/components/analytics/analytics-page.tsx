@@ -124,15 +124,15 @@ function SupportAnalytics({ days }: { days: number }) {
           value={analytics.backlog}
           deltaLabel={
             analytics.backlogChange === 0
-              ? "Flat against prior period"
-              : `${analytics.backlogChange > 0 ? "Grew by" : "Shrank by"} ${Math.abs(analytics.backlogChange)}`
+              ? "Created and resolved balanced"
+              : `${analytics.backlogChange > 0 ? "+" : "−"}${Math.abs(analytics.backlogChange)} net over the period`
           }
           tone={analytics.backlogChange > 3 ? "warning" : undefined}
         />
         <MetricCard
           label="Avg first response"
           value={Math.round(analytics.avgFirstResponseMinutes)}
-          unit="min"
+          unit="business min"
           icon={Clock}
         />
         <MetricCard

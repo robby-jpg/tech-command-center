@@ -485,6 +485,7 @@ function ProjectKanban({ projects }: { projects: Project[] }) {
 
   return (
     <DndContext
+      id="project-kanban"
       sensors={sensors}
       onDragStart={(e) => setDragging(projects.find((p) => p.id === e.active.id) ?? null)}
       onDragEnd={onDragEnd}

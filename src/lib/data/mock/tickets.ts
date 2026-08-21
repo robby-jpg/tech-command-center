@@ -734,16 +734,21 @@ const HISTORY_REQUESTERS = [
   "u-erin",
 ];
 const HISTORY_ASSIGNEES = ["u-robby", "u-michael", "u-jonathan", "u-alexis"];
-const HISTORY_PRIORITIES: Ticket["priority"][] = [
-  "low",
-  "normal",
-  "normal",
-  "normal",
-  "normal",
-  "high",
-  "high",
-  "critical",
-];
+/**
+ * Priority mix for generated history.
+ *
+ * Weighted rather than drawn from a flat list: Critical is reserved for genuine
+ * operational impact, so it has to be rare. A uniform pool put it at roughly
+ * one ticket in eight, which would mean the definition had drifted rather than
+ * the world getting worse — exactly what the Analytics page warns about.
+ */
+function pickPriority(rand: () => number): Ticket["priority"] {
+  const r = rand();
+  if (r < 0.03) return "critical";
+  if (r < 0.2) return "high";
+  if (r < 0.8) return "normal";
+  return "low";
+}
 
 /**
  * One closed ticket.
@@ -760,8 +765,7 @@ function historicalTicket(
   opts: { factor?: number; resolvedHoursAgo?: number; priority?: Ticket["priority"] },
 ): Ticket {
   const seedItem = HISTORY_TITLES[Math.floor(rand() * HISTORY_TITLES.length)]!;
-  const priority =
-    opts.priority ?? HISTORY_PRIORITIES[Math.floor(rand() * HISTORY_PRIORITIES.length)]!;
+  const priority = opts.priority ?? pickPriority(rand);
   const requesterId = HISTORY_REQUESTERS[Math.floor(rand() * HISTORY_REQUESTERS.length)]!;
   const assigneeId = HISTORY_ASSIGNEES[Math.floor(rand() * HISTORY_ASSIGNEES.length)]!;
 

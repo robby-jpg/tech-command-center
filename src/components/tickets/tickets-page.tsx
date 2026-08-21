@@ -461,13 +461,14 @@ function TicketAnalyticsView() {
             value={analytics.backlog}
             sublabel={
               analytics.backlogChange === 0
-                ? "flat"
-                : `${analytics.backlogChange > 0 ? "+" : "−"}${Math.abs(analytics.backlogChange)} vs prior`
+                ? "balanced"
+                : `${analytics.backlogChange > 0 ? "+" : "−"}${Math.abs(analytics.backlogChange)} net`
             }
           />
           <StatTile
             label="Avg first response"
             value={`${Math.round(analytics.avgFirstResponseMinutes)}m`}
+            sublabel="business minutes"
           />
           <StatTile
             label="Avg resolution"
