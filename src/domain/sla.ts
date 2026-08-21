@@ -88,7 +88,7 @@ export const DEFAULT_SLA_CONFIG: SLAConfig = {
   },
 };
 
-export const SLA_STATES = ["met", "healthy", "risk", "breached"] as const;
+export const SLA_STATES = ["met", "healthy", "paused", "risk", "breached"] as const;
 export type SLAState = (typeof SLA_STATES)[number];
 
 export const SLA_STATE_META: Record<
@@ -97,6 +97,7 @@ export const SLA_STATE_META: Record<
 > = {
   met: { label: "Met", tone: "success", short: "Met" },
   healthy: { label: "On track", tone: "success", short: "OK" },
+  paused: { label: "On hold", tone: "neutral", short: "Held" },
   risk: { label: "At risk", tone: "warning", short: "Risk" },
   breached: { label: "Breached", tone: "critical", short: "Breached" },
 };
@@ -166,6 +167,21 @@ export function evaluateSLA(
 
   const consumed = minutesConsumed(target, created, now);
   const minutesRemaining = budget - consumed;
+
+  // The clock stops while the department is waiting on the person who raised
+  // the ticket. Counting that time against the team measures the requester's
+  // response, not the team's, and turns the number into something nobody can
+  // act on. A full implementation would subtract each waiting interval from
+  // the elapsed total; with no status history in V1 the clock is simply held.
+  if (ticket.status === "waiting_on_requester") {
+    return {
+      state: "paused",
+      minutesRemaining,
+      dueAt: slaDeadline(target, created, budget).toISOString(),
+      target,
+      awaitingFirstResponse,
+    };
+  }
 
   // "At risk" covers the last fifth of the window, clamped at both ends: a
   // fifteen-minute response target should not spend its whole life in warning,

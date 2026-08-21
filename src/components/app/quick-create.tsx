@@ -82,9 +82,13 @@ export function QuickCreate({
 }) {
   const [mode, setMode] = React.useState<QuickCreateMode>(initialMode);
 
-  React.useEffect(() => {
+  // Opening the dialog returns it to whichever mode the caller asked for,
+  // adjusted during render so it never flashes the previous tab.
+  const [wasOpen, setWasOpen] = React.useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) setMode(initialMode);
-  }, [open, initialMode]);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

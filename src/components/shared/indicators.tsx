@@ -282,11 +282,13 @@ export function SLAIndicator({
   const detail =
     evaluation.state === "met"
       ? "Resolved inside target"
-      : remaining === null
-        ? meta.label
-        : remaining < 0
-          ? `${formatDuration(remaining)} over`
-          : `${formatDuration(remaining)} left`;
+      : evaluation.state === "paused"
+        ? "Clock held — waiting on requester"
+        : remaining === null
+          ? meta.label
+          : remaining < 0
+            ? `${formatDuration(remaining)} over`
+            : `${formatDuration(remaining)} left`;
 
   const clock = evaluation.awaitingFirstResponse ? "First response" : "Resolution";
 
@@ -300,11 +302,11 @@ export function SLAIndicator({
               "text-xs",
               evaluation.state === "breached" && "font-medium text-critical",
               evaluation.state === "risk" && "font-medium text-warning",
-              (evaluation.state === "healthy" || evaluation.state === "met") &&
+              (evaluation.state === "healthy" || evaluation.state === "met" || evaluation.state === "paused") &&
                 "text-fg-subtle",
             )}
           >
-            {evaluation.state === "met" ? "Met" : detail}
+            {evaluation.state === "met" ? "Met" : evaluation.state === "paused" ? "On hold" : detail}
           </span>
         </span>
       </Hint>
@@ -317,7 +319,7 @@ export function SLAIndicator({
         "rounded-md border px-2.5 py-2",
         evaluation.state === "breached" && "border-critical-border bg-critical-bg",
         evaluation.state === "risk" && "border-warning-border bg-warning-bg",
-        (evaluation.state === "healthy" || evaluation.state === "met") &&
+        (evaluation.state === "healthy" || evaluation.state === "met" || evaluation.state === "paused") &&
           "border-line bg-subtle",
       )}
     >

@@ -46,8 +46,6 @@ const STORAGE_KEY = "tcc.workspace.v1";
 
 type Ctx = {
   snapshot: WorkspaceSnapshot;
-  /** False until the persisted overlay has been applied, if there is one. */
-  hydrated: boolean;
   actions: Actions;
   reset: () => void;
   /** True when the session has diverged from the seeded dataset. */
@@ -77,16 +75,27 @@ export function useActions(): Actions {
 /* Reducer                                                                    */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * `dirty` lives in the reducer rather than in its own `useState` so that
+ * adopting the stored overlay is a single transition. Keeping it separate
+ * meant the hydration effect had to call `setState` alongside the dispatch,
+ * which triggers a cascading render.
+ */
+type State = { snapshot: WorkspaceSnapshot; dirty: boolean };
+
 type Action =
-  | { type: "replace"; snapshot: WorkspaceSnapshot }
+  | { type: "adopt"; snapshot: WorkspaceSnapshot }
+  | { type: "reset"; snapshot: WorkspaceSnapshot }
   | { type: "apply"; fn: (s: WorkspaceSnapshot) => WorkspaceSnapshot };
 
-function reducer(state: WorkspaceSnapshot, action: Action): WorkspaceSnapshot {
+function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "replace":
-      return action.snapshot;
+    case "adopt":
+      return { snapshot: action.snapshot, dirty: true };
+    case "reset":
+      return { snapshot: action.snapshot, dirty: false };
     case "apply":
-      return action.fn(state);
+      return { snapshot: action.fn(state.snapshot), dirty: true };
   }
 }
 
@@ -101,21 +110,23 @@ export function WorkspaceProvider({
   initial: WorkspaceSnapshot;
   children: React.ReactNode;
 }) {
-  const [snapshot, dispatch] = React.useReducer(reducer, initial);
-  const [hydrated, setHydrated] = React.useState(false);
-  const [dirty, setDirty] = React.useState(false);
+  const [state, dispatch] = React.useReducer(reducer, {
+    snapshot: initial,
+    dirty: false,
+  });
+  const hydratedRef = React.useRef(false);
 
   // The stored overlay is adopted after mount, never during render — reading
   // localStorage while rendering would make the server and client markup
-  // disagree.
+  // disagree and produce a hydration mismatch.
   React.useEffect(() => {
+    let restored: WorkspaceSnapshot | null = null;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as WorkspaceSnapshot;
         if (parsed?.now === initial.now) {
-          dispatch({ type: "replace", snapshot: parsed });
-          setDirty(true);
+          restored = parsed;
         } else {
           // Seed data has moved on; the overlay would be inconsistent with it.
           window.localStorage.removeItem(STORAGE_KEY);
@@ -124,21 +135,22 @@ export function WorkspaceProvider({
     } catch {
       // A corrupt or unavailable store is not worth failing the app over.
     }
-    setHydrated(true);
+
+    hydratedRef.current = true;
+    if (restored) dispatch({ type: "adopt", snapshot: restored });
   }, [initial.now]);
 
   React.useEffect(() => {
-    if (!hydrated || !dirty) return;
+    if (!hydratedRef.current || !state.dirty) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.snapshot));
     } catch {
       // Quota exceeded, private mode, and so on. The session still works.
     }
-  }, [snapshot, hydrated, dirty]);
+  }, [state.snapshot, state.dirty]);
 
   const mutate = React.useCallback(
     (fn: (s: WorkspaceSnapshot) => WorkspaceSnapshot) => {
-      setDirty(true);
       dispatch({ type: "apply", fn });
     },
     [],
@@ -150,15 +162,19 @@ export function WorkspaceProvider({
     } catch {
       /* ignore */
     }
-    setDirty(false);
-    dispatch({ type: "replace", snapshot: initial });
+    dispatch({ type: "reset", snapshot: initial });
   }, [initial]);
 
   const actions = React.useMemo(() => createActions(mutate), [mutate]);
 
   const value = React.useMemo<Ctx>(
-    () => ({ snapshot, hydrated, actions, reset, dirty }),
-    [snapshot, hydrated, actions, reset, dirty],
+    () => ({
+      snapshot: state.snapshot,
+      actions,
+      reset,
+      dirty: state.dirty,
+    }),
+    [state.snapshot, state.dirty, actions, reset],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

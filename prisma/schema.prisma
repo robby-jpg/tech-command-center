@@ -1,0 +1,930 @@
+// =============================================================================
+// Tech Command Center — PostgreSQL schema
+//
+// STATUS: not yet in use. V1 runs entirely on the mock provider; nothing in the
+// application imports Prisma today. This file exists so the database shape is
+// settled and reviewable before anyone writes the provider that implements
+// `DataSource` (see src/lib/data/types.ts) against it.
+//
+// Scope. Only objects this department *owns* live here: tickets, projects,
+// tasks, milestones, diagrams, articles, the relationships between them, and
+// internal configuration. Salesforce, Power BI, Fabric, Zapier and the rest
+// remain their own source of truth and are read through adapters — copying
+// their data into this database would create a second version of the truth and
+// a synchronisation problem nobody asked for.
+//
+// The System table is the one deliberate exception: it is a local *catalogue*
+// of external systems, describing what each one is for and how it connects,
+// not a copy of anything inside them.
+//
+// Secrets. No table stores an API key, token or password. A System references
+// the NAME of the environment variable holding its credentials
+// (`credentialEnvKey`); the value stays in the server environment.
+//
+// To generate: npx prisma migrate dev --name init
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Enums — mirror src/domain exactly. The domain layer stays the definition;
+// these exist so the database can enforce it too.
+// -----------------------------------------------------------------------------
+
+enum TicketStatus {
+  NEW
+  TRIAGED
+  IN_PROGRESS
+  WAITING_ON_REQUESTER
+  BLOCKED
+  TESTING
+  RESOLVED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum TicketCategory {
+  SALESFORCE
+  POWER_BI
+  MICROSOFT_FABRIC
+  ZAPIER
+  HARDWARE
+  ACCOUNTS
+  PERMISSIONS
+  WEBSITE
+  BART
+  OTHER
+}
+
+/// Where a request arrived from. Department portals write into the same queue
+/// as this application; the source is what tells them apart.
+enum TicketSource {
+  COMMAND_CENTER
+  SALES_PORTAL
+  PROJECT_CONSULTANT_PORTAL
+  PRODUCTION_PORTAL
+  SLACK
+  EMAIL
+  API
+  AUTOMATION
+  OTHER
+}
+
+enum BusinessImpact {
+  INDIVIDUAL
+  TEAM
+  DEPARTMENT
+  COMPANY
+}
+
+enum Urgency {
+  CAN_WAIT
+  SOON
+  URGENT
+  IMMEDIATE
+}
+
+enum ProjectStatus {
+  IDEA
+  BACKLOG
+  PLANNING
+  IN_PROGRESS
+  TESTING
+  ROLLOUT
+  COMPLETE
+  ON_HOLD
+}
+
+/// Set by a person. Never derived from progress — the two answer different
+/// questions and a project can be 80% done and completely stuck.
+enum ProjectHealth {
+  ON_TRACK
+  AT_RISK
+  BLOCKED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  REVIEW
+  DONE
+}
+
+enum MilestoneStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+  AT_RISK
+}
+
+enum SystemHealth {
+  OPERATIONAL
+  DEGRADED
+  PARTIAL_OUTAGE
+  OUTAGE
+  MAINTENANCE
+}
+
+enum SystemCriticality {
+  CRITICAL
+  HIGH
+  STANDARD
+  LOW
+}
+
+enum SystemKind {
+  APPLICATION
+  DATABASE
+  AUTOMATION
+  WEBSITE
+  EXTERNAL_SERVICE
+  INTERNAL_TOOL
+  MANUAL_PROCESS
+}
+
+enum ConnectionMethod {
+  API
+  WEBHOOK
+  DATABASE
+  SCHEDULED_SYNC
+  AUTOMATION
+  FILE_TRANSFER
+  MANUAL
+  OTHER
+}
+
+enum ConnectionDirection {
+  ONE_WAY
+  BIDIRECTIONAL
+}
+
+enum DiagramType {
+  ARCHITECTURE
+  WORKFLOW
+  TROUBLESHOOTING
+  DATA_FLOW
+}
+
+enum DiagramNodeKind {
+  START
+  PROCESS
+  DECISION
+  SYSTEM
+  DATABASE
+  PERSON
+  NOTE
+  END
+}
+
+enum KnowledgeCategory {
+  SALESFORCE
+  POWER_BI
+  MICROSOFT_FABRIC
+  ZAPIER
+  BART
+  ACCOUNTS_ACCESS
+  HARDWARE
+  WEBSITES
+  INTEGRATIONS
+  TROUBLESHOOTING
+  PROCESSES
+  ARCHITECTURE
+}
+
+enum ActivityEntityType {
+  TICKET
+  PROJECT
+  SYSTEM
+  DIAGRAM
+  ARTICLE
+  TASK
+  MILESTONE
+}
+
+enum TicketActivityKind {
+  CREATED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  LINKED_PROJECT
+  LINKED_SYSTEM
+  LINKED_TICKET
+  ATTACHMENT_ADDED
+  SLA_FIRST_RESPONSE
+  SLA_BREACHED
+  WATCHER_ADDED
+  RESOLVED
+  REOPENED
+  NOTE
+}
+
+// -----------------------------------------------------------------------------
+// People
+//
+// Identity will eventually come from company SSO. This table holds the
+// application's own view of a person — what they are called, whether they can
+// be assigned work — keyed by the external subject once SSO exists.
+// -----------------------------------------------------------------------------
+
+model Department {
+  id        String   @id
+  name      String
+  shortName String
+  users     User[]
+  tickets   Ticket[]
+
+  @@map("department")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  /// Subject claim from the identity provider. Null until SSO is wired up.
+  externalId   String?    @unique
+  email        String     @unique
+  name         String
+  initials     String
+  title        String
+  departmentId String
+  isTechTeam   Boolean    @default(false)
+  accent       String     @default("navy")
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id])
+
+  requestedTickets Ticket[]          @relation("TicketRequester")
+  assignedTickets  Ticket[]          @relation("TicketAssignee")
+  watching         TicketWatcher[]
+  comments         TicketComment[]
+  ticketActivity   TicketActivity[]
+  ownedProjects    Project[]         @relation("ProjectOwner")
+  contributions    ProjectContributor[]
+  ownedTasks       Task[]
+  ownedSystems     System[]
+  systemChanges    SystemChange[]
+  connections      SystemConnection[]
+  diagrams         Diagram[]
+  articles         KnowledgeArticle[]
+  activity         ActivityEvent[]
+
+  @@index([isTechTeam])
+  @@map("app_user")
+}
+
+// -----------------------------------------------------------------------------
+// Tickets
+// -----------------------------------------------------------------------------
+
+model Ticket {
+  id           String   @id @default(cuid())
+  /// Display key, e.g. KHT-1042. Allocated from `ticket_number_seq`.
+  ticketNumber String   @unique
+  title        String
+  description  String   @default("")
+
+  status   TicketStatus   @default(NEW)
+  priority TicketPriority @default(NORMAL)
+  category TicketCategory @default(OTHER)
+  source   TicketSource   @default(COMMAND_CENTER)
+
+  requesterId           String
+  requesterDepartmentId String
+  assigneeId            String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  dueDate         DateTime?
+  /// Derived from priority and createdAt on the business-hours clock. Stored so
+  /// that a target already committed to does not silently move if the SLA
+  /// configuration is edited later.
+  slaDueAt        DateTime?
+
+  estimatedEffortHours Decimal? @db.Decimal(6, 2)
+  actualTimeSpentHours Decimal? @db.Decimal(6, 2)
+
+  businessImpact BusinessImpact @default(INDIVIDUAL)
+  urgency        Urgency        @default(SOON)
+
+  tags        String[] @default([])
+  reopenCount Int      @default(0)
+
+  projectId String?
+
+  requester           User        @relation("TicketRequester", fields: [requesterId], references: [id])
+  assignee            User?       @relation("TicketAssignee", fields: [assigneeId], references: [id])
+  requesterDepartment Department  @relation(fields: [requesterDepartmentId], references: [id])
+  project             Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  comments    TicketComment[]
+  activity    TicketActivity[]
+  attachments Attachment[]
+  watchers    TicketWatcher[]
+  systems     TicketSystem[]
+  articles    TicketArticle[]
+
+  relatedFrom TicketRelation[] @relation("RelationSource")
+  relatedTo   TicketRelation[] @relation("RelationTarget")
+
+  diagrams DiagramTicket[]
+
+  // The queue is read far more often than it is written, and almost always
+  // filtered by status or assignee first.
+  @@index([status, priority])
+  @@index([assigneeId, status])
+  @@index([createdAt])
+  @@index([resolvedAt])
+  @@index([projectId])
+  @@map("ticket")
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  authorId  String
+  body      String
+  /// Internal notes are hidden from requesters once department portals exist.
+  internal  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      User         @relation(fields: [authorId], references: [id])
+  attachments Attachment[]
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_comment")
+}
+
+/// The audit trail on a ticket. Append-only: rows are never updated or removed.
+model TicketActivity {
+  id        String             @id @default(cuid())
+  ticketId  String
+  actorId   String
+  kind      TicketActivityKind
+  fromValue String?
+  toValue   String?
+  detail    String?
+  createdAt DateTime           @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actor  User   @relation(fields: [actorId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_activity")
+}
+
+/// Metadata only. File contents belong in object storage, not in Postgres.
+model Attachment {
+  id           String   @id @default(cuid())
+  ticketId     String?
+  commentId    String?
+  name         String
+  sizeBytes    Int
+  contentType  String
+  /// Key in the object store. Null until file storage is wired up.
+  storageKey   String?
+  uploadedById String
+  uploadedAt   DateTime @default(now())
+
+  ticket  Ticket?        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  comment TicketComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("attachment")
+}
+
+model TicketWatcher {
+  ticketId String
+  userId   String
+  addedAt  DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([ticketId, userId])
+  @@map("ticket_watcher")
+}
+
+model TicketRelation {
+  sourceTicketId String
+  targetTicketId String
+  createdAt      DateTime @default(now())
+
+  source Ticket @relation("RelationSource", fields: [sourceTicketId], references: [id], onDelete: Cascade)
+  target Ticket @relation("RelationTarget", fields: [targetTicketId], references: [id], onDelete: Cascade)
+
+  @@id([sourceTicketId, targetTicketId])
+  @@map("ticket_relation")
+}
+
+// -----------------------------------------------------------------------------
+// Projects
+// -----------------------------------------------------------------------------
+
+model Project {
+  id          String @id @default(cuid())
+  slug        String @unique
+  name        String
+  description String @default("")
+
+  businessGoal   String @default("")
+  expectedImpact String @default("")
+
+  ownerId String
+
+  status     ProjectStatus  @default(PLANNING)
+  health     ProjectHealth  @default(ON_TRACK)
+  /// Why health is not ON_TRACK. Shown wherever health is shown.
+  healthNote String?
+  priority   TicketPriority @default(NORMAL)
+
+  startDate   DateTime
+  targetDate  DateTime
+  completedAt DateTime?
+  /// 0–100, kept in step with completed tasks.
+  progress    Int       @default(0)
+
+  estimatedHoursSavedMonthly Decimal  @default(0) @db.Decimal(8, 2)
+  /// Measured after launch. Null until then; replaces the estimate in totals.
+  actualHoursSavedMonthly    Decimal? @db.Decimal(8, 2)
+  manualProcessesEliminated  Int      @default(0)
+  automationsCreated         Int      @default(0)
+  departmentsImpacted        String[] @default([])
+
+  /// Strategic grouping used by the roadmap.
+  initiative String   @default("Unassigned")
+  tags       String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner        User                 @relation("ProjectOwner", fields: [ownerId], references: [id])
+  contributors ProjectContributor[]
+  tasks        Task[]
+  milestones   Milestone[]
+  tickets      Ticket[]
+  systems      ProjectSystem[]
+  articles     ProjectArticle[]
+  diagrams     DiagramProject[]
+
+  dependsOn  ProjectDependency[] @relation("Dependent")
+  dependedBy ProjectDependency[] @relation("Dependency")
+
+  @@index([status, health])
+  @@index([completedAt])
+  @@map("project")
+}
+
+model ProjectContributor {
+  projectId String
+  userId    String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@map("project_contributor")
+}
+
+model ProjectDependency {
+  projectId    String
+  dependsOnId  String
+
+  project   Project @relation("Dependent", fields: [projectId], references: [id], onDelete: Cascade)
+  dependsOn Project @relation("Dependency", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, dependsOnId])
+  @@map("project_dependency")
+}
+
+model Task {
+  id          String @id @default(cuid())
+  projectId   String
+  /// Set for subtasks; top-level tasks are null.
+  parentTaskId String?
+  milestoneId String?
+
+  title       String
+  description String @default("")
+  ownerId     String?
+
+  status   TaskStatus @default(TODO)
+  priority String     @default("normal")
+
+  dueDate        DateTime?
+  estimatedHours Decimal?  @db.Decimal(6, 2)
+  actualHours    Decimal?  @db.Decimal(6, 2)
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone  Milestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  owner      User?      @relation(fields: [ownerId], references: [id])
+  parentTask Task?      @relation("Subtask", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks   Task[]     @relation("Subtask")
+
+  dependsOn  TaskDependency[] @relation("TaskDependent")
+  dependedBy TaskDependency[] @relation("TaskDependency")
+
+  @@index([projectId, status])
+  @@index([ownerId, status])
+  @@map("task")
+}
+
+model TaskDependency {
+  taskId      String
+  dependsOnId String
+
+  task      Task @relation("TaskDependent", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn Task @relation("TaskDependency", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, dependsOnId])
+  @@map("task_dependency")
+}
+
+model Milestone {
+  id          String          @id @default(cuid())
+  projectId   String
+  name        String
+  description String          @default("")
+  targetDate  DateTime
+  completedAt DateTime?
+  status      MilestoneStatus @default(NOT_STARTED)
+  sortOrder   Int             @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([projectId, sortOrder])
+  @@map("milestone")
+}
+
+// -----------------------------------------------------------------------------
+// Systems
+//
+// A local catalogue of the company's technology estate — what each system is
+// for, who owns it, how healthy it is and what it connects to. Not a copy of
+// anything held inside those systems.
+// -----------------------------------------------------------------------------
+
+model System {
+  id          String @id @default(cuid())
+  slug        String @unique
+  name        String
+  shortName   String
+  description String @default("")
+  purpose     String @default("")
+
+  kind        SystemKind        @default(EXTERNAL_SERVICE)
+  criticality SystemCriticality @default(STANDARD)
+
+  health          SystemHealth @default(OPERATIONAL)
+  healthNote      String?
+  healthChangedAt DateTime     @default(now())
+
+  ownerId       String
+  ownerTeam     String   @default("Tech Department")
+  businessTeams String[] @default([])
+
+  vendor   String?
+  adminUrl String?
+
+  /// NAME of the environment variable holding this system's credentials.
+  /// The value is never stored here and never reaches the browser.
+  credentialEnvKey String?
+
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner       User               @relation(fields: [ownerId], references: [id])
+  changeLog   SystemChange[]
+  outgoing    SystemConnection[] @relation("ConnectionSource")
+  incoming    SystemConnection[] @relation("ConnectionTarget")
+  tickets     TicketSystem[]
+  projects    ProjectSystem[]
+  articles    ArticleSystem[]
+  diagramNodes DiagramNode[]
+  mapPosition SystemMapPosition?
+
+  @@index([health])
+  @@index([criticality])
+  @@map("system")
+}
+
+model SystemChange {
+  id        String   @id @default(cuid())
+  systemId  String
+  actorId   String
+  summary   String
+  kind      String
+  createdAt DateTime @default(now())
+
+  system System @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  actor  User   @relation(fields: [actorId], references: [id])
+
+  @@index([systemId, createdAt])
+  @@map("system_change")
+}
+
+model SystemConnection {
+  id              String              @id @default(cuid())
+  sourceSystemId  String
+  targetSystemId  String
+  method          ConnectionMethod    @default(API)
+  direction       ConnectionDirection @default(ONE_WAY)
+  /// What actually moves across the link.
+  dataDescription String              @default("")
+  frequency       String              @default("")
+  description     String              @default("")
+  health          SystemHealth        @default(OPERATIONAL)
+  ownerId         String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  sourceSystem System @relation("ConnectionSource", fields: [sourceSystemId], references: [id], onDelete: Cascade)
+  targetSystem System @relation("ConnectionTarget", fields: [targetSystemId], references: [id], onDelete: Cascade)
+  owner        User   @relation(fields: [ownerId], references: [id])
+
+  @@index([sourceSystemId])
+  @@index([targetSystemId])
+  @@map("system_connection")
+}
+
+/// Layout for the canonical System Map. Kept apart from the System record
+/// because position is a property of the map, not of the system.
+model SystemMapPosition {
+  systemId String @id
+  x        Float
+  y        Float
+
+  system System @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@map("system_map_position")
+}
+
+// -----------------------------------------------------------------------------
+// Diagrams
+//
+// Persisted renderer-agnostically — positions, labels and kinds only, with no
+// React Flow types in the schema. Swapping the canvas library, or adding
+// PNG/SVG export, needs no migration.
+// -----------------------------------------------------------------------------
+
+model Diagram {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  description String      @default("")
+  type        DiagramType @default(ARCHITECTURE)
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  createdBy User          @relation(fields: [createdById], references: [id])
+  nodes     DiagramNode[]
+  edges     DiagramEdge[]
+
+  projects DiagramProject[]
+  tickets  DiagramTicket[]
+  articles DiagramArticle[]
+
+  @@index([type])
+  @@map("diagram")
+}
+
+model DiagramNode {
+  id          String          @id @default(cuid())
+  diagramId   String
+  kind        DiagramNodeKind @default(PROCESS)
+  label       String
+  description String          @default("")
+  x           Float
+  y           Float
+  /// Links the node to a real system, which is what lets a diagram reflect
+  /// live health rather than being a drawing that goes stale.
+  systemId    String?
+
+  diagram Diagram @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  system  System? @relation(fields: [systemId], references: [id], onDelete: SetNull)
+
+  outgoing DiagramEdge[] @relation("EdgeSource")
+  incoming DiagramEdge[] @relation("EdgeTarget")
+
+  @@index([diagramId])
+  @@map("diagram_node")
+}
+
+model DiagramEdge {
+  id           String  @id @default(cuid())
+  diagramId    String
+  sourceNodeId String
+  targetNodeId String
+  label        String  @default("")
+  dashed       Boolean @default(false)
+
+  diagram    Diagram     @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  sourceNode DiagramNode @relation("EdgeSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode DiagramNode @relation("EdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@index([diagramId])
+  @@map("diagram_edge")
+}
+
+// -----------------------------------------------------------------------------
+// Knowledge base
+// -----------------------------------------------------------------------------
+
+model KnowledgeArticle {
+  id       String            @id @default(cuid())
+  slug     String            @unique
+  title    String
+  summary  String            @default("")
+  /// Markdown. Rendered to React elements, never to raw HTML.
+  content  String
+  category KnowledgeCategory @default(TROUBLESHOOTING)
+  authorId String
+  tags     String[]          @default([])
+  views    Int               @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User             @relation(fields: [authorId], references: [id])
+  systems  ArticleSystem[]
+  projects ProjectArticle[]
+  tickets  TicketArticle[]
+  diagrams DiagramArticle[]
+
+  @@index([category])
+  @@map("knowledge_article")
+}
+
+// -----------------------------------------------------------------------------
+// Join tables
+//
+// Explicit rather than implicit so each relationship can carry its own columns
+// later — when it was linked, by whom, and why.
+// -----------------------------------------------------------------------------
+
+model TicketSystem {
+  ticketId String
+  systemId String
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  system System @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@id([ticketId, systemId])
+  @@map("ticket_system")
+}
+
+model TicketArticle {
+  ticketId  String
+  articleId String
+
+  ticket  Ticket           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  article KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([ticketId, articleId])
+  @@map("ticket_article")
+}
+
+model ProjectSystem {
+  projectId String
+  systemId  String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  system  System  @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, systemId])
+  @@map("project_system")
+}
+
+model ProjectArticle {
+  projectId String
+  articleId String
+
+  project Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  article KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, articleId])
+  @@map("project_article")
+}
+
+model ArticleSystem {
+  articleId String
+  systemId  String
+
+  article KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  system  System           @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, systemId])
+  @@map("article_system")
+}
+
+model DiagramProject {
+  diagramId String
+  projectId String
+
+  diagram Diagram @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([diagramId, projectId])
+  @@map("diagram_project")
+}
+
+model DiagramTicket {
+  diagramId String
+  ticketId  String
+
+  diagram Diagram @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  ticket  Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@id([diagramId, ticketId])
+  @@map("diagram_ticket")
+}
+
+model DiagramArticle {
+  diagramId String
+  articleId String
+
+  diagram Diagram          @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  article KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([diagramId, articleId])
+  @@map("diagram_article")
+}
+
+// -----------------------------------------------------------------------------
+// Cross-cutting
+// -----------------------------------------------------------------------------
+
+/// The department-wide audit stream. Denormalised on purpose: it carries the
+/// label and href it needs to render, so the Activity page never has to resolve
+/// references across five tables to paint a row.
+model ActivityEvent {
+  id          String             @id @default(cuid())
+  entityType  ActivityEntityType
+  entityId    String
+  entityLabel String
+  action      String
+  actorId     String
+  summary     String
+  detail      String?
+  href        String
+  significant Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@map("activity_event")
+}
+
+/// Editable SLA targets. One row per priority; seeded from DEFAULT_SLA_CONFIG.
+model SLATarget {
+  priority             TicketPriority @id
+  firstResponseMinutes Int
+  resolutionMinutes    Int
+  /// "business" measures on working hours; "elapsed" on the wall clock, which
+  /// is what Critical uses — an outage at 9pm is still an outage.
+  clock                String         @default("business")
+  firstResponseLabel   String
+  resolutionLabel      String
+  updatedAt            DateTime       @updatedAt
+
+  @@map("sla_target")
+}
+
+/// Working hours the business-time clock runs on. A holiday calendar belongs
+/// here too once it is needed.
+model BusinessCalendar {
+  id          String @id @default("default")
+  timeZone    String @default("America/Denver")
+  startHour   Int    @default(9)
+  endHour     Int    @default(17)
+  /// 0 = Sunday. Defaults to Monday–Friday.
+  workingDays Int[]  @default([1, 2, 3, 4, 5])
+
+  @@map("business_calendar")
+}

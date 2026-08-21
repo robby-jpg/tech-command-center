@@ -254,8 +254,9 @@ export function needsAttention(snap: WorkspaceSnapshot): AttentionItem[] {
     // problem, not an interrupt — it belongs in Backlog Aging on Analytics.
     // Without this filter the queue fills with routine ageing and the section
     // stops meaning anything.
-    const urgentEnough = ticket.priority === "critical" || ticket.priority === "high";
-    if (urgentEnough && (evaluation.state === "risk" || evaluation.state === "breached")) {
+    // Critical tickets already returned above, so "high" is the only remaining
+    // priority that qualifies.
+    if (ticket.priority === "high" && (evaluation.state === "risk" || evaluation.state === "breached")) {
       const minutes = Math.abs(Math.round(evaluation.minutesRemaining ?? 0));
       add({
         id: ticket.id,

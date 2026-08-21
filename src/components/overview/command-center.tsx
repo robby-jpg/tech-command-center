@@ -47,7 +47,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Tabs,
-  TabsContent,
+
   TabsList,
   TabsTrigger,
   ToggleGroup,
@@ -59,7 +59,7 @@ import { PageBody, SectionHeader } from "@/components/shared/page";
 import { EmptyState } from "@/components/shared/states";
 import {
   AvatarStack,
-  HealthIndicator,
+
   PriorityBadge,
   ProgressBar,
   ProjectHealthBadge,
