@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { companyYearMonth } from "./business-hours";
 import { entityId, isoDateTime, type Tone } from "./common";
 
 /* -------------------------------------------------------------------------- */
@@ -248,8 +249,15 @@ export const createProjectInputSchema = z.object({
 });
 export type CreateProjectInput = z.input<typeof createProjectInputSchema>;
 
-/** Which calendar quarter a date falls in, e.g. "Q3 2026". */
+/**
+ * Which calendar quarter a date falls in, e.g. "Q3 2026".
+ *
+ * Resolved in company time. Reading the host's local month instead put an
+ * instant at midnight UTC on 1 July into the previous quarter for anyone west
+ * of Greenwich — which labelled the current-quarter roadmap "Q2 2026" in August.
+ */
 export function quarterOf(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return `Q${Math.floor(d.getMonth() / 3) + 1} ${d.getFullYear()}`;
+  const { year, month } = companyYearMonth(d);
+  return `Q${Math.floor((month - 1) / 3) + 1} ${year}`;
 }

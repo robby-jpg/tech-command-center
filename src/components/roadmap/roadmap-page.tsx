@@ -258,10 +258,15 @@ function horizonRange(now: Date, horizon: Horizon) {
   const start = new Date(Date.UTC(year, startMonth, 1));
   const end = new Date(Date.UTC(year, startMonth + 3, 0, 23, 59, 59));
 
+  // The label is taken from the middle of the quarter, not its first instant.
+  // Midnight UTC on 1 July is still 30 June in Denver, which had this reading
+  // "Q2 2026" throughout August.
+  const midQuarter = new Date(Date.UTC(year, startMonth + 1, 15));
+
   return {
     start: start.getTime(),
     end: end.getTime(),
-    label: `${quarterOf(start)}${offset === 0 ? " — current quarter" : ""}`,
+    label: `${quarterOf(midQuarter)}${offset === 0 ? " — current quarter" : ""}`,
   };
 }
 

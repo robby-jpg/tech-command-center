@@ -18,10 +18,6 @@
  */
 export const DATASET_NOW = new Date("2026-08-21T15:12:00.000Z");
 
-/** Kind Home operates out of Colorado. Formatting is pinned to it so that the
- *  server and the browser render identical strings regardless of host TZ. */
-export const COMPANY_TIME_ZONE = "America/Denver";
-
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;

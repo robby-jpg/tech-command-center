@@ -1,4 +1,4 @@
-import { COMPANY_TIME_ZONE } from "./data/mock/now";
+import { COMPANY_TIME_ZONE } from "@/domain";
 
 /**
  * Date and number formatting.

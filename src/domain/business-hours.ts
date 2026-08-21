@@ -16,9 +16,30 @@
  * calendar from configuration. Everything else here is exact.
  */
 
+/**
+ * Kind Home operates out of Colorado. Every date the application formats or
+ * reasons about is resolved in this zone, so that a server running in UTC and a
+ * browser in Denver agree on what day — and what quarter — an instant falls in.
+ */
+export const COMPANY_TIME_ZONE = "America/Denver";
+
 const MT_OFFSET_HOURS = -6;
 const DAY_START_HOUR = 9;
 const DAY_END_HOUR = 17;
+
+/** Calendar year and month (1–12) for an instant, in company time. */
+export function companyYearMonth(date: Date): { year: number; month: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: COMPANY_TIME_ZONE,
+    year: "numeric",
+    month: "numeric",
+  }).formatToParts(date);
+
+  return {
+    year: Number(parts.find((p) => p.type === "year")?.value ?? "0"),
+    month: Number(parts.find((p) => p.type === "month")?.value ?? "1"),
+  };
+}
 
 export const BUSINESS_MINUTES_PER_DAY = (DAY_END_HOUR - DAY_START_HOUR) * 60;
 
