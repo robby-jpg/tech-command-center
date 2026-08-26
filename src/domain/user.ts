@@ -103,8 +103,11 @@ export const userSchema = z.object({
   department: departmentKeySchema,
   /** Members of the Tech Department can be assigned work. */
   isTechTeam: z.boolean(),
-  /** Slack handle, used to attribute tickets raised through the intake form. */
-  slackHandle: z.string().nullable(),
+  /**
+   * Slack member id. The intake form carries the submitter as a real mention,
+   * so this is the reliable join between a request and a person.
+   */
+  slackId: z.string().nullable(),
   /** Numeric ClickUp member id, where the person has an account. */
   clickUpId: z.number().nullable(),
   /**

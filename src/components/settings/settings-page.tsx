@@ -684,10 +684,18 @@ function Integrations() {
 function ImportQuality() {
   const snapshot = useSnapshot();
 
-  const imported = snapshot.tickets.filter((t) => t.externalRef?.source === "clickup");
+  const imported = snapshot.tickets.filter((t) => t.externalRefs.length > 0);
   if (imported.length === 0) return null;
 
-  const structured = imported.filter((t) => t.source === "slack").length;
+  const hasSlack = (t: (typeof imported)[number]) =>
+    t.externalRefs.some((r) => r.source === "slack");
+  const hasClickUp = (t: (typeof imported)[number]) =>
+    t.externalRefs.some((r) => r.source === "clickup");
+
+  const reconciled = imported.filter((t) => hasSlack(t) && hasClickUp(t)).length;
+  const slackOnly = imported.filter((t) => hasSlack(t) && !hasClickUp(t)).length;
+  const clickUpOnly = imported.filter((t) => !hasSlack(t) && hasClickUp(t)).length;
+
   const withRequester = imported.filter((t) => t.requesterId !== null).length;
   const categorised = imported.filter((t) => t.category !== "other").length;
   const linked = imported.filter((t) => t.relatedSystemIds.length > 0).length;
@@ -696,17 +704,12 @@ function ImportQuality() {
     {
       label: "Requester known",
       value: withRequester,
-      note: "Only the Slack intake form records who asked. The rest were pasted in.",
-    },
-    {
-      label: "Came through the intake form",
-      value: structured,
-      note: "These carry request type, impact and priority. The rest carry none.",
+      note: "Comes from the Slack intake form. The ClickUp copy discards it.",
     },
     {
       label: "Category inferred",
       value: categorised,
-      note: "ClickUp has no category field — these were matched on keywords.",
+      note: "Neither source has a category field — these were matched on keywords.",
     },
     {
       label: "Linked to a system",
@@ -721,11 +724,45 @@ function ImportQuality() {
         <div>
           <CardTitle>Import quality</CardTitle>
           <p className="mt-0.5 text-xs text-fg-muted">
-            {imported.length} tickets imported from ClickUp. What the source system did
-            not capture could not be imported.
+            {imported.length} requests, reconciled across Slack and ClickUp.
           </p>
         </div>
       </CardHeader>
+
+      {/* Deduplication is the headline: the automation means the same request
+          exists twice, and counting it twice would overstate the workload. */}
+      <div className="grid grid-cols-3 divide-x divide-line-soft border-b border-line-soft">
+        <div className="px-4 py-3">
+          <p className="tabular text-xl leading-none font-semibold text-teal-700">
+            {reconciled}
+          </p>
+          <p className="mt-1.5 text-2xs font-medium text-fg">Duplicates collapsed</p>
+          <p className="mt-0.5 text-2xs leading-4 text-fg-subtle">
+            Raised in Slack, copied into ClickUp by the automation. Matched on the
+            Slack timestamp and shown once.
+          </p>
+        </div>
+        <div className="px-4 py-3">
+          <p className="tabular text-xl leading-none font-semibold text-fg">
+            {slackOnly}
+          </p>
+          <p className="mt-1.5 text-2xs font-medium text-fg">Slack only</p>
+          <p className="mt-0.5 text-2xs leading-4 text-fg-subtle">
+            In an intake channel with no ClickUp copy — the automation did not fire,
+            or it is outside the captured window.
+          </p>
+        </div>
+        <div className="px-4 py-3">
+          <p className="tabular text-xl leading-none font-semibold text-fg">
+            {clickUpOnly}
+          </p>
+          <p className="mt-1.5 text-2xs font-medium text-fg">ClickUp only</p>
+          <p className="mt-0.5 text-2xs leading-4 text-fg-subtle">
+            Pasted straight into ClickUp, or raised before the intake channels
+            existed. These are the ones with no requester.
+          </p>
+        </div>
+      </div>
 
       <ul className="divide-y divide-line-soft">
         {rows.map((row) => {

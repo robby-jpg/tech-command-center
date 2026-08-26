@@ -419,8 +419,18 @@ export function importTickets(
       attachments: [],
       watcherIds: [],
       reopenCount: 0,
-      /** Provenance, so a record can always be traced back to its origin. */
-      externalRef: { source: "clickup", id: task.id, url: task.url },
+      externalRefs: [
+        {
+          source: "clickup" as const,
+          // Reconciliation may demote this to a mirror once a Slack original
+          // is found for it.
+          role: "origin" as const,
+          id: task.id,
+          url: task.url,
+          label: task.list.name,
+          commentCount: null,
+        },
+      ],
     });
   }
 

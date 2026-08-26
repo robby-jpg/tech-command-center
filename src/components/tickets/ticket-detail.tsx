@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   CircleDot,
+  Copy,
   Eye,
   FolderKanban,
   Link2,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import {
   BUSINESS_IMPACT_META,
+  EXTERNAL_SOURCE_META,
   DEPARTMENTS,
   TICKET_CATEGORY_META,
   TICKET_PRIORITY_META,
@@ -60,6 +62,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Hint,
   Separator,
   Textarea,
   Switch,
@@ -143,6 +146,7 @@ function TicketHeader({ ticket }: { ticket: Ticket }) {
             <span className="text-2xs text-fg-subtle">
               via {TICKET_SOURCE_META[ticket.source].label}
             </span>
+            <Provenance ticket={ticket} />
             {ticket.reopenCount > 0 && (
               <Badge tone="warning">
                 Reopened {ticket.reopenCount}×
@@ -204,6 +208,64 @@ function TicketHeader({ ticket }: { ticket: Ticket }) {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Where this request also lives.
+ *
+ * Most tickets exist in two places — raised in a Slack intake channel, then
+ * copied into ClickUp by an automation. Showing both, with the origin marked,
+ * is how somebody can tell this is one request rather than wonder whether
+ * they are looking at a duplicate.
+ */
+function Provenance({ ticket }: { ticket: Ticket }) {
+  if (ticket.externalRefs.length === 0) return null;
+
+  return (
+    <>
+      {ticket.externalRefs.map((ref) => {
+        const isOrigin = ref.role === "origin";
+        const label = `${EXTERNAL_SOURCE_META[ref.source].label}${ref.label ? ` · ${ref.label}` : ""}`;
+        const body = (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
+              isOrigin
+                ? "bg-teal-50 text-teal-700"
+                : "bg-subtle text-fg-subtle",
+            )}
+          >
+            {isOrigin ? <Link2 className="size-2.5" /> : <Copy className="size-2.5" />}
+            {label}
+            {ref.commentCount != null && ref.commentCount > 0 && (
+              <span className="text-fg-subtle">
+                · {ref.commentCount} {ref.commentCount === 1 ? "reply" : "replies"}
+              </span>
+            )}
+          </span>
+        );
+
+        return (
+          <Hint
+            key={`${ref.source}-${ref.id}`}
+            label={
+              isOrigin
+                ? "Where this request was raised. Source of truth for who asked and what for."
+                : "A copy made by the Slack-to-ClickUp automation. Shown so it can be found, not treated as a second ticket."
+            }
+          >
+            {ref.url ? (
+              <a href={ref.url} target="_blank" rel="noopener noreferrer">
+                {body}
+              </a>
+            ) : (
+              body
+            )}
+          </Hint>
+        );
+      })}
+    </>
   );
 }
 

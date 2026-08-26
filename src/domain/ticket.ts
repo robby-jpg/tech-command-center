@@ -283,6 +283,45 @@ export type TicketTimelineEntry =
   | { type: "activity"; at: string; activity: TicketActivity };
 
 /* -------------------------------------------------------------------------- */
+/* Provenance                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export const EXTERNAL_SOURCES = [
+  "slack",
+  "clickup",
+  "salesforce",
+  "jotform",
+  "other",
+] as const;
+
+export const externalRefSchema = z.object({
+  source: z.enum(EXTERNAL_SOURCES),
+  /**
+   * `origin` is where the request was actually raised. `mirror` is a copy some
+   * automation made of it — real, findable, but not authoritative.
+   */
+  role: z.enum(["origin", "mirror"]),
+  id: z.string(),
+  url: z.string().nullable(),
+  /** Human-readable location, e.g. "#it-ticketing-cams". */
+  label: z.string().nullable(),
+  /** Replies held over there, where the source reports them. */
+  commentCount: z.number().nullable(),
+});
+export type ExternalRef = z.infer<typeof externalRefSchema>;
+
+export const EXTERNAL_SOURCE_META: Record<
+  (typeof EXTERNAL_SOURCES)[number],
+  { label: string }
+> = {
+  slack: { label: "Slack" },
+  clickup: { label: "ClickUp" },
+  salesforce: { label: "Salesforce" },
+  jotform: { label: "Jotform" },
+  other: { label: "Other" },
+};
+
+/* -------------------------------------------------------------------------- */
 /* Ticket                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -327,18 +366,16 @@ export const ticketSchema = z.object({
   /** Set when a resolved ticket is reopened; drives the reopened-rate metric. */
   reopenCount: z.number(),
   /**
-   * Where this record came from, when it was not created here. Keeping the
-   * origin id and a link back means an imported ticket can always be
-   * reconciled against the system it came from — and that a re-import can
-   * recognise what it has already seen instead of duplicating it.
+   * Every place this same request exists outside the application.
+   *
+   * A list rather than a single reference, because one request genuinely does
+   * live in more than one system: a Slack intake message is copied into ClickUp
+   * by an automation, so the same thing has two homes. Recording both — one
+   * marked `origin`, the rest `mirror` — is what lets the application show a
+   * single ticket instead of two, and lets a re-import recognise what it has
+   * already seen rather than duplicating it again.
    */
-  externalRef: z
-    .object({
-      source: z.enum(["clickup", "slack", "salesforce", "jotform", "other"]),
-      id: z.string(),
-      url: z.string().nullable(),
-    })
-    .nullable(),
+  externalRefs: z.array(externalRefSchema),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 

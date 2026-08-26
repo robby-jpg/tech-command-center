@@ -1,14 +1,16 @@
 import type { User } from "@/domain";
 
 /**
- * People, taken from the real ClickUp workspace membership and from the
- * handles that appear on tickets raised through the Slack intake form.
+ * People, resolved from the Slack intake channels.
  *
- * Where only a handle is known, the display name is that handle capitalised
- * rather than an invented surname — a wrong surname on a real colleague is
- * worse than an incomplete one. Those records carry `clickUpId: null`, which
- * is also how the importer knows they still need reconciling against a
- * directory.
+ * Every request raised through the ticket form carries the submitter as a real
+ * Slack mention — `<@U04LVDK3A4Q|Jessie Greathouse>` — so names and ids here are
+ * the genuine ones rather than handles guessed from a ClickUp paste. That is
+ * the single biggest reason Slack is the source of truth: ClickUp's copy of the
+ * same request throws the identity away.
+ *
+ * `slackId` is the join key. `clickUpId` is only set for the three people who
+ * have ClickUp accounts.
  */
 export const MOCK_USERS: User[] = [
   /* -- Tech Department ------------------------------------------------------ */
@@ -20,7 +22,7 @@ export const MOCK_USERS: User[] = [
     title: "Technology Manager",
     department: "tech",
     isTechTeam: true,
-    slackHandle: "robby",
+    slackId: "U01T26X8N3Y",
     clickUpId: 50313351,
     accent: "navy",
   },
@@ -32,7 +34,7 @@ export const MOCK_USERS: User[] = [
     title: "Director of Technology",
     department: "tech",
     isTechTeam: true,
-    slackHandle: "michael",
+    slackId: "UJLC2U6P8",
     clickUpId: 50313342,
     accent: "teal",
   },
@@ -44,7 +46,7 @@ export const MOCK_USERS: User[] = [
     title: "Business Intelligence",
     department: "tech",
     isTechTeam: true,
-    slackHandle: "jonathan.keller",
+    slackId: null,
     clickUpId: 138033218,
     accent: "accent",
   },
@@ -58,21 +60,9 @@ export const MOCK_USERS: User[] = [
     title: "Operations Leadership",
     department: "leadership",
     isTechTeam: false,
-    slackHandle: "kendall.bell",
+    slackId: null,
     clickUpId: 89317248,
     accent: "info",
-  },
-  {
-    id: "u-lindsay",
-    name: "Lindsay",
-    initials: "L",
-    email: "lindsay@kindhomesolutions.com",
-    title: "Leadership",
-    department: "leadership",
-    isTechTeam: false,
-    slackHandle: "lindsay",
-    clickUpId: null,
-    accent: "warning",
   },
 
   /* -- Marketing ------------------------------------------------------------ */
@@ -84,7 +74,7 @@ export const MOCK_USERS: User[] = [
     title: "Marketing",
     department: "marketing",
     isTechTeam: false,
-    slackHandle: "corey",
+    slackId: "UMFCCGKN0",
     clickUpId: 96270691,
     accent: "success",
   },
@@ -96,7 +86,7 @@ export const MOCK_USERS: User[] = [
     title: "Marketing Partner — Storystak",
     department: "marketing",
     isTechTeam: false,
-    slackHandle: null,
+    slackId: null,
     clickUpId: 101189716,
     accent: "accent",
   },
@@ -110,31 +100,19 @@ export const MOCK_USERS: User[] = [
     title: "Customer Account Manager",
     department: "cam",
     isTechTeam: false,
-    slackHandle: "jessie.greathouse",
+    slackId: "U04LVDK3A4Q",
     clickUpId: 89347961,
     accent: "teal",
   },
   {
-    id: "u-jenae",
-    name: "Jenae Sanchez",
-    initials: "JS",
-    email: "jenae.sanchez@kindhomesolutions.com",
+    id: "u-morgan",
+    name: "Morgan James",
+    initials: "MJ",
+    email: "morgan@kindhomesolutions.com",
     title: "Customer Account Manager",
     department: "cam",
     isTechTeam: false,
-    slackHandle: "jenae.sanchez",
-    clickUpId: null,
-    accent: "info",
-  },
-  {
-    id: "u-chloe",
-    name: "Chloe",
-    initials: "C",
-    email: "chloe@kindhomesolutions.com",
-    title: "Customer Account Management",
-    department: "cam",
-    isTechTeam: false,
-    slackHandle: "chloe",
+    slackId: "U03HBGFSCU8",
     clickUpId: null,
     accent: "warning",
   },
@@ -142,18 +120,66 @@ export const MOCK_USERS: User[] = [
   /* -- Sales Development ---------------------------------------------------- */
   {
     id: "u-treven",
-    name: "Treven",
-    initials: "T",
+    name: "Treven Crist",
+    initials: "TC",
     email: "treven@kindhomesolutions.com",
     title: "SDR Manager",
     department: "sdr",
     isTechTeam: false,
-    slackHandle: "treven",
+    slackId: "UMFS7V66R",
     clickUpId: null,
     accent: "navy",
   },
+  {
+    id: "u-chloe",
+    name: "Chloe Hackathorn",
+    initials: "CH",
+    email: "chloe@kindhomesolutions.com",
+    title: "SDR Team Lead",
+    department: "sdr",
+    isTechTeam: false,
+    slackId: "U07E7U3LJ48",
+    clickUpId: null,
+    accent: "info",
+  },
 
-  /* -- Sales / Estimating --------------------------------------------------- */
+  /* -- Estimating (the #it-ticketing-sales channel uses the EST form) ------- */
+  {
+    id: "u-tom",
+    name: "Tom",
+    initials: "T",
+    email: "tom@kindhomesolutions.com",
+    title: "Project Consultant",
+    department: "est",
+    isTechTeam: false,
+    slackId: "UM4D0D3T5",
+    clickUpId: null,
+    accent: "success",
+  },
+  {
+    id: "u-seth",
+    name: "Seth Erdman",
+    initials: "SE",
+    email: "seth@kindhomesolutions.com",
+    title: "Project Consultant",
+    department: "est",
+    isTechTeam: false,
+    slackId: "U055GDPHFJB",
+    clickUpId: null,
+    accent: "teal",
+  },
+  {
+    id: "u-kyle",
+    name: "Kyle Wetherill",
+    initials: "KW",
+    email: "kyle.wetherill@kindhomesolutions.com",
+    title: "Project Consultant",
+    department: "est",
+    isTechTeam: false,
+    slackId: "U05DKEGJXUH",
+    clickUpId: null,
+    accent: "info",
+  },
   {
     id: "u-crystal",
     name: "Crystal Guess",
@@ -162,59 +188,191 @@ export const MOCK_USERS: User[] = [
     title: "Project Consultant",
     department: "est",
     isTechTeam: false,
-    slackHandle: "crystal",
+    slackId: "U08L3HLE68N",
     clickUpId: null,
-    accent: "success",
+    accent: "warning",
   },
   {
-    id: "u-terah",
-    name: "Terah",
-    initials: "T",
-    email: "terah@kindhomesolutions.com",
+    id: "u-dakota",
+    name: "Dakota Hove",
+    initials: "DH",
+    email: "dakota@kindhomesolutions.com",
     title: "Project Consultant",
     department: "est",
     isTechTeam: false,
-    slackHandle: "terah",
+    slackId: "U05GGFA4JLX",
     clickUpId: null,
-    accent: "teal",
-  },
-
-  /* -- Production ----------------------------------------------------------- */
-  {
-    id: "u-kyle",
-    name: "Kyle Wetherill",
-    initials: "KW",
-    email: "kyle.wetherill@kindhomesolutions.com",
-    title: "Production",
-    department: "production",
-    isTechTeam: false,
-    slackHandle: "kyle.wetherill",
-    clickUpId: null,
-    accent: "info",
+    accent: "accent",
   },
   {
-    id: "u-stephen",
-    name: "Stephen Andzuzewski",
-    initials: "SA",
-    email: "stephen.andzuzewski@kindhomesolutions.com",
-    title: "Production",
-    department: "production",
+    id: "u-joshua",
+    name: "Joshua Van Hansen",
+    initials: "JV",
+    email: "joshua@kindhomesolutions.com",
+    title: "Project Consultant",
+    department: "est",
     isTechTeam: false,
-    slackHandle: "stephen.andzuzewski",
+    slackId: "U09535CLVCK",
     clickUpId: null,
     accent: "navy",
   },
   {
+    id: "u-glen",
+    name: "Glen Reinecke",
+    initials: "GR",
+    email: "glen@kindhomesolutions.com",
+    title: "Project Consultant",
+    department: "est",
+    isTechTeam: false,
+    slackId: "U05H9LJ1L9X",
+    clickUpId: null,
+    accent: "success",
+  },
+  {
+    id: "u-ryota",
+    name: "Ryota Nishimura",
+    initials: "RN",
+    email: "ryota@kindhomesolutions.com",
+    title: "Project Consultant",
+    department: "est",
+    isTechTeam: false,
+    slackId: "UMFCCH0KE",
+    clickUpId: null,
+    accent: "teal",
+  },
+  {
+    id: "u-andy",
+    name: "Andy",
+    initials: "A",
+    email: "andy@kindhomesolutions.com",
+    title: "Project Consultant",
+    department: "est",
+    isTechTeam: false,
+    slackId: "U08EXQ47A05",
+    clickUpId: null,
+    accent: "warning",
+  },
+  {
+    id: "u-hunter",
+    name: "Hunter Logan",
+    initials: "HL",
+    email: "hunter@kindhomesolutions.com",
+    title: "Sales Leadership",
+    department: "est",
+    isTechTeam: false,
+    slackId: null,
+    clickUpId: null,
+    accent: "info",
+  },
+
+  /* -- Production and Project Management ------------------------------------ */
+  {
+    id: "u-lindsay",
+    name: "Lindsay Jo",
+    initials: "LJ",
+    email: "lindsay@kindhomesolutions.com",
+    title: "Production Leadership",
+    department: "production",
+    isTechTeam: false,
+    slackId: "U01VBCVP38X",
+    clickUpId: null,
+    accent: "warning",
+  },
+  {
+    id: "u-lia",
+    name: "Lia Schiavone",
+    initials: "LS",
+    email: "lia@kindhomesolutions.com",
+    title: "Project Manager",
+    department: "pm",
+    isTechTeam: false,
+    slackId: "U06MLLJ2CMD",
+    clickUpId: null,
+    accent: "accent",
+  },
+  {
+    id: "u-becki",
+    name: "Becki Stuckart",
+    initials: "BS",
+    email: "becki@kindhomesolutions.com",
+    title: "Project Manager",
+    department: "pm",
+    isTechTeam: false,
+    slackId: "U0B059NHQAE",
+    clickUpId: null,
+    accent: "teal",
+  },
+  {
+    id: "u-jeremy",
+    name: "Jeremy Patlen",
+    initials: "JP",
+    email: "jeremy@kindhomesolutions.com",
+    title: "Project Manager",
+    department: "pm",
+    isTechTeam: false,
+    slackId: "U08HUG1TBPH",
+    clickUpId: null,
+    accent: "navy",
+  },
+  {
+    id: "u-steve",
+    name: "Steve A.",
+    initials: "SA",
+    email: "steve@kindhomesolutions.com",
+    title: "Production",
+    department: "production",
+    isTechTeam: false,
+    slackId: "U05J41SEW8P",
+    clickUpId: null,
+    accent: "success",
+  },
+  {
+    id: "u-kurt",
+    name: "Kurt ODonnell",
+    initials: "KO",
+    email: "kurt@kindhomesolutions.com",
+    title: "Production",
+    department: "production",
+    isTechTeam: false,
+    slackId: "U05BM5YMR26",
+    clickUpId: null,
+    accent: "info",
+  },
+  {
+    id: "u-todd",
+    name: "Todd Stanton",
+    initials: "TS",
+    email: "todd@kindhomesolutions.com",
+    title: "Production",
+    department: "production",
+    isTechTeam: false,
+    slackId: "U0AQCC1RYRG",
+    clickUpId: null,
+    accent: "warning",
+  },
+  {
+    id: "u-matt",
+    name: "Matt Shyra",
+    initials: "MS",
+    email: "matt@kindhomesolutions.com",
+    title: "Production",
+    department: "production",
+    isTechTeam: false,
+    slackId: "UMFSAEM61",
+    clickUpId: null,
+    accent: "accent",
+  },
+  {
     id: "u-yasmine",
-    name: "Yasmine",
-    initials: "Y",
+    name: "Yasmine Henson",
+    initials: "YH",
     email: "yasmine@kindhomesolutions.com",
     title: "Project Manager",
     department: "pm",
     isTechTeam: false,
-    slackHandle: "yasmine",
+    slackId: "U03REQ3SA3H",
     clickUpId: null,
-    accent: "accent",
+    accent: "teal",
   },
 ];
 
@@ -229,15 +387,31 @@ export const CURRENT_USER_ID = "u-robby";
 
 export const TECH_TEAM = MOCK_USERS.filter((u) => u.isTechTeam);
 
-/** Resolves a Slack handle from the intake form to a person, if we know them. */
-export function userBySlackHandle(handle: string): User | null {
-  const normalised = handle.replace(/^@/, "").toLowerCase();
-  return (
-    MOCK_USERS.find((u) => u.slackHandle?.toLowerCase() === normalised) ?? null
-  );
+/** Resolves a Slack member id from an intake message to a person. */
+export function userBySlackId(slackId: string): User | null {
+  return MOCK_USERS.find((u) => u.slackId === slackId) ?? null;
 }
 
 /** Resolves a ClickUp assignee id to a person. */
 export function userByClickUpId(clickUpId: number): User | null {
   return MOCK_USERS.find((u) => u.clickUpId === clickUpId) ?? null;
+}
+
+/**
+ * Last-resort match on a Slack handle, for the ClickUp copies.
+ *
+ * Those carry only "@lindsay" or "@chloe.hackathorn" rather than a real member
+ * id, so the handle is matched against the email local part and against the
+ * display name with spaces turned into dots — the two forms Slack generates.
+ * Only needed for tickets with no Slack original to reconcile against.
+ */
+export function userBySlackHandle(handle: string): User | null {
+  const normalised = handle.replace(/^@/, "").trim().toLowerCase();
+  return (
+    MOCK_USERS.find(
+      (u) =>
+        u.email.split("@")[0]?.toLowerCase() === normalised ||
+        u.name.toLowerCase().replace(/s+/g, ".") === normalised,
+    ) ?? null
+  );
 }

@@ -16,7 +16,12 @@
  * never through `new Date()` directly. A live implementation returns the real
  * clock from that same function and nothing else changes.
  */
-export const DATASET_NOW = new Date("2026-08-25T15:12:00.000Z");
+/**
+ * Must sit after the newest captured record. The most recent Slack intake
+ * message is 09:41 Pacific on 25 August; anchoring before it made tickets
+ * claim to have been raised in the future.
+ */
+export const DATASET_NOW = new Date("2026-08-25T22:00:00.000Z");
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
