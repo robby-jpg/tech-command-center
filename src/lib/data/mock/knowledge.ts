@@ -26,10 +26,10 @@ export const MOCK_ARTICLES: KnowledgeArticle[] = [
     summary:
       "What a new Project Consultant needs in Salesforce, in the order it has to be granted.",
     category: "salesforce",
-    authorId: "u-alexis",
+    authorId: "u-robby",
     tags: ["onboarding", "access", "permissions"],
     relatedSystemIds: ["sys-salesforce", "sys-google-workspace"],
-    relatedTicketIds: ["t-1084", "t-1076"],
+    relatedTicketIds: [],
     createdAt: daysAgo(210),
     updatedAt: daysAgo(11),
     views: 184,
@@ -75,10 +75,10 @@ Reverse in the same order. See [Offboarding Checklist](/knowledge/offboarding-ch
     summary:
       "Why a passkey works in the browser but not the mobile app, and what to do about each failure mode.",
     category: "troubleshooting",
-    authorId: "u-alexis",
+    authorId: "u-robby",
     tags: ["mfa", "passkey", "mobile", "access"],
     relatedSystemIds: ["sys-salesforce", "sys-google-workspace"],
-    relatedTicketIds: ["t-1092", "t-1077"],
+    relatedTicketIds: [],
     relatedDiagramIds: ["dg-signin-troubleshooting"],
     createdAt: daysAgo(160),
     updatedAt: daysAgo(1),
@@ -119,9 +119,9 @@ If Workspace itself will not authenticate, nothing downstream will. Stop trouble
     authorId: "u-jonathan",
     tags: ["fabric", "lakehouse", "semantic-model", "standards"],
     relatedSystemIds: ["sys-fabric", "sys-salesforce", "sys-power-bi"],
-    relatedProjectIds: ["p-fabric-migration"],
+    relatedProjectIds: ["p-fabric-elt"],
     relatedDiagramIds: ["dg-salesforce-to-powerbi"],
-    relatedTicketIds: ["t-1069", "t-1089"],
+    relatedTicketIds: [],
     createdAt: daysAgo(95),
     updatedAt: daysAgo(6),
     views: 141,
@@ -170,7 +170,7 @@ This is a business decision. It is tracked on KHT-1069 and it is currently block
     authorId: "u-jonathan",
     tags: ["refresh", "troubleshooting", "stale-data"],
     relatedSystemIds: ["sys-power-bi", "sys-fabric"],
-    relatedTicketIds: ["t-1091", "t-1089"],
+    relatedTicketIds: [],
     relatedDiagramIds: ["dg-salesforce-to-powerbi"],
     createdAt: daysAgo(140),
     updatedAt: daysAgo(2),
@@ -204,7 +204,7 @@ Say plainly that the number is late rather than wrong, and give them the time it
     authorId: "u-jonathan",
     tags: ["standards", "modelling", "measures"],
     relatedSystemIds: ["sys-power-bi", "sys-fabric"],
-    relatedProjectIds: ["p-exec-reporting", "p-fabric-migration"],
+    relatedProjectIds: ["p-scorecards", "p-fabric-elt"],
     createdAt: daysAgo(120),
     updatedAt: daysAgo(16),
     views: 98,
@@ -243,15 +243,15 @@ Applied on the Employee model by role. A sales manager sees their own team. Test
     tags: ["leads", "zapier", "attribution"],
     relatedSystemIds: [
       "sys-websites",
-      "sys-salesrabbit",
+      "sys-spotio",
       "sys-jotform",
       "sys-aircall",
-      "sys-hubspot",
+      "sys-salesforce",
       "sys-zapier",
       "sys-salesforce",
     ],
     relatedDiagramIds: ["dg-lead-capture"],
-    relatedTicketIds: ["t-1090", "t-1094"],
+    relatedTicketIds: [],
     createdAt: daysAgo(100),
     updatedAt: daysAgo(2),
     views: 203,
@@ -260,7 +260,7 @@ Applied on the Employee model by role. A sales manager sees their own team. Test
 | Source | Route | Notes |
 | --- | --- | --- |
 | Website form | Framer → Zapier webhook → Salesforce | Highest volume |
-| SalesRabbit | Automation → Zapier → Salesforce | Canvassing |
+| SPOTIO | Automation → Zapier → Salesforce | Canvassing |
 | Jotform | Webhook → Zapier → Salesforce | Warranty, sign-off |
 | Aircall | Direct API | Does not touch Zapier |
 | HubSpot | Two-way sync every 15 minutes | Source of duplicates |
@@ -287,7 +287,7 @@ Check whether it shares a Salesforce connection with the others. Re-authorising 
     authorId: "u-robby",
     tags: ["zapier", "standards", "automation", "monitoring"],
     relatedSystemIds: ["sys-zapier"],
-    relatedTicketIds: ["t-1094", "t-1078"],
+    relatedTicketIds: [],
     createdAt: daysAgo(150),
     updatedAt: daysAgo(9),
     views: 167,
@@ -297,7 +297,7 @@ Check whether it shares a Salesforce connection with the others. Re-authorising 
 
 \`[Source] → [Destination] — [what it does]\`
 
-For example: \`SalesRabbit → Salesforce — create lead\`. Anyone can then find every zap touching a system by searching its name.
+For example: \`SPOTIO → Salesforce — create lead\`. Anyone can then find every zap touching a system by searching its name.
 
 ## Fail loudly
 
@@ -335,9 +335,9 @@ Turn it off and leave it for two weeks. Deleting removes the task history, which
     authorId: "u-michael",
     tags: ["bart", "pricing", "internal"],
     relatedSystemIds: ["sys-bart", "sys-salesforce"],
-    relatedProjectIds: ["p-bart-improvements"],
+    relatedProjectIds: ["p-bart-exterior"],
     relatedDiagramIds: ["dg-estimate-lifecycle"],
-    relatedTicketIds: ["t-1087"],
+    relatedTicketIds: [],
     createdAt: daysAgo(180),
     updatedAt: daysAgo(4),
     views: 129,
@@ -375,11 +375,11 @@ Two rules, both learned the hard way:
     summary:
       "Every system a departing employee touches, in the order access should be removed.",
     category: "accounts_access",
-    authorId: "u-alexis",
+    authorId: "u-robby",
     tags: ["offboarding", "security", "access", "checklist"],
     relatedSystemIds: ["sys-google-workspace", "sys-salesforce", "sys-companycam"],
-    relatedProjectIds: ["p-done-onboarding"],
-    relatedTicketIds: ["t-1076"],
+    relatedProjectIds: ["p-salesforce-general"],
+    relatedTicketIds: [],
     createdAt: daysAgo(190),
     updatedAt: daysAgo(41),
     views: 156,
@@ -387,7 +387,7 @@ Two rules, both learned the hard way:
 
 1. **Google Workspace** — suspend, do not delete. Deleting destroys mail and file ownership. Transfer the drive to their manager.
 2. **Salesforce** — deactivate the user, then reassign open opportunities and tasks. Deactivating without reassigning orphans live work.
-3. **SalesRabbit** — remove from territory, or their leads become unassignable.
+3. **SPOTIO** — remove from territory, or their leads become unassignable.
 4. **CompanyCam** — remove from the company; photos stay with the projects.
 5. **Aircall** — release the extension so the number can be reused.
 6. **PandaDoc / Power BI / Fabric** — remove from workspaces.
@@ -407,9 +407,9 @@ The systems removed, who reassigned the Salesforce records, and where the hardwa
     title: "Hardware Provisioning",
     summary: "What we buy, how it is imaged, and what to do with the machine coming back.",
     category: "hardware",
-    authorId: "u-alexis",
+    authorId: "u-robby",
     tags: ["hardware", "procurement", "imaging"],
-    relatedTicketIds: ["t-1074", "t-1096"],
+    relatedTicketIds: [],
     createdAt: daysAgo(170),
     updatedAt: daysAgo(52),
     views: 74,

@@ -16,7 +16,7 @@
  * never through `new Date()` directly. A live implementation returns the real
  * clock from that same function and nothing else changes.
  */
-export const DATASET_NOW = new Date("2026-08-21T15:12:00.000Z");
+export const DATASET_NOW = new Date("2026-08-25T15:12:00.000Z");
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

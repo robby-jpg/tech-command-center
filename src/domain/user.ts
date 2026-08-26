@@ -2,20 +2,28 @@ import { z } from "zod";
 import { entityId } from "./common";
 
 /**
- * Departments at Kind Home Solutions. A ticket requester belongs to one; the
- * Tech Department is itself a department so internal work is not a special
- * case.
+ * Departments at Kind Home Solutions.
+ *
+ * These are the real ones, taken from how work is actually organised: the IT
+ * Tickets folder in ClickUp is split into Leadership, CAM, Production, Sales
+ * and SDR lists, and the project folders add EST, PM, Marketing and
+ * Accounting/HR. Technology is itself a department so internal work is not a
+ * special case.
+ *
+ * CAM is Customer Account Management; SDR is Sales Development; EST is the
+ * estimating team; PM is project management.
  */
 export const DEPARTMENT_KEYS = [
   "tech",
-  "sales",
-  "production",
-  "operations",
-  "marketing",
-  "finance",
-  "customer_experience",
-  "holiday_lights",
   "leadership",
+  "sales",
+  "sdr",
+  "cam",
+  "est",
+  "production",
+  "pm",
+  "marketing",
+  "accounting_hr",
 ] as const;
 
 export const departmentKeySchema = z.enum(DEPARTMENT_KEYS);
@@ -25,28 +33,66 @@ export const departmentSchema = z.object({
   id: departmentKeySchema,
   name: z.string(),
   shortName: z.string(),
+  /** Matches the ClickUp list a ticket arrives in, where one exists. */
+  clickUpList: z.string().nullable(),
 });
 export type Department = z.infer<typeof departmentSchema>;
 
 export const DEPARTMENTS: Record<DepartmentKey, Department> = {
-  tech: { id: "tech", name: "Technology", shortName: "Tech" },
-  sales: { id: "sales", name: "Sales", shortName: "Sales" },
-  production: { id: "production", name: "Production", shortName: "Production" },
-  operations: { id: "operations", name: "Operations", shortName: "Ops" },
-  marketing: { id: "marketing", name: "Marketing", shortName: "Marketing" },
-  finance: { id: "finance", name: "Finance", shortName: "Finance" },
-  customer_experience: {
-    id: "customer_experience",
-    name: "Customer Experience",
-    shortName: "CX",
+  tech: { id: "tech", name: "Technology", shortName: "Tech", clickUpList: null },
+  leadership: {
+    id: "leadership",
+    name: "Leadership",
+    shortName: "Leadership",
+    clickUpList: "Leadership Tickets",
   },
-  holiday_lights: {
-    id: "holiday_lights",
-    name: "Holiday Lights",
-    shortName: "Holiday",
+  sales: {
+    id: "sales",
+    name: "Sales",
+    shortName: "Sales",
+    clickUpList: "Sales Tickets",
   },
-  leadership: { id: "leadership", name: "Leadership", shortName: "Leadership" },
+  sdr: {
+    id: "sdr",
+    name: "Sales Development",
+    shortName: "SDR",
+    clickUpList: "SDR Tickets",
+  },
+  cam: {
+    id: "cam",
+    name: "Customer Account Management",
+    shortName: "CAM",
+    clickUpList: "CAM Tickets",
+  },
+  est: { id: "est", name: "Estimating", shortName: "EST", clickUpList: null },
+  production: {
+    id: "production",
+    name: "Production",
+    shortName: "Production",
+    clickUpList: "Production Tickets",
+  },
+  pm: { id: "pm", name: "Project Management", shortName: "PM", clickUpList: null },
+  marketing: {
+    id: "marketing",
+    name: "Marketing",
+    shortName: "Marketing",
+    clickUpList: null,
+  },
+  accounting_hr: {
+    id: "accounting_hr",
+    name: "Accounting & HR",
+    shortName: "Acct/HR",
+    clickUpList: null,
+  },
 };
+
+/** Resolves a ClickUp list name back to the department that owns it. */
+export function departmentForClickUpList(listName: string): DepartmentKey {
+  const match = DEPARTMENT_KEYS.find(
+    (key) => DEPARTMENTS[key].clickUpList === listName,
+  );
+  return match ?? "leadership";
+}
 
 export const userSchema = z.object({
   id: entityId,
@@ -57,6 +103,10 @@ export const userSchema = z.object({
   department: departmentKeySchema,
   /** Members of the Tech Department can be assigned work. */
   isTechTeam: z.boolean(),
+  /** Slack handle, used to attribute tickets raised through the intake form. */
+  slackHandle: z.string().nullable(),
+  /** Numeric ClickUp member id, where the person has an account. */
+  clickUpId: z.number().nullable(),
   /**
    * Avatar tint. Chosen from a fixed set so avatars stay distinguishable
    * without introducing colours outside the token file.

@@ -27,6 +27,12 @@ import { average, groupBy, percentChange, sortBy, sum, unique } from "./utils";
 const DAY_MS = 86_400_000;
 
 /**
+ * How long a breached ticket stays in the attention queue before it is treated
+ * as backlog rather than as something to act on today.
+ */
+const STALE_BREACH_CUTOFF_BUSINESS_DAYS = 5;
+
+/**
  * Business-time durations, said the way somebody would say them out loud.
  * "2 business days" rather than "960 minutes".
  */
@@ -256,7 +262,22 @@ export function needsAttention(snap: WorkspaceSnapshot): AttentionItem[] {
     // stops meaning anything.
     // Critical tickets already returned above, so "high" is the only remaining
     // priority that qualifies.
-    if (ticket.priority === "high" && (evaluation.state === "risk" || evaluation.state === "breached")) {
+    //
+    // A breach only stays actionable for so long. A high-priority ticket that
+    // went past target three months ago is not an interrupt — it is abandoned
+    // backlog, and letting it sit at the top of this queue pushes out the work
+    // somebody could actually do today. Past the cutoff it drops to Backlog
+    // Aging on Analytics, where ageing is the point.
+    const overrunMinutes = -(evaluation.minutesRemaining ?? 0);
+    const staleBreach =
+      evaluation.state === "breached" &&
+      overrunMinutes > STALE_BREACH_CUTOFF_BUSINESS_DAYS * BUSINESS_MINUTES_PER_DAY;
+
+    if (
+      ticket.priority === "high" &&
+      !staleBreach &&
+      (evaluation.state === "risk" || evaluation.state === "breached")
+    ) {
       const minutes = Math.abs(Math.round(evaluation.minutesRemaining ?? 0));
       add({
         id: ticket.id,

@@ -673,6 +673,106 @@ function Integrations() {
 
 /* ========================================================================== */
 
+/**
+ * What the ClickUp import could not determine.
+ *
+ * Shown rather than hidden: every gap here is something the source system
+ * never captured, which is the clearest argument for moving intake into this
+ * application. Computed from the tickets themselves so it cannot drift out of
+ * step with them.
+ */
+function ImportQuality() {
+  const snapshot = useSnapshot();
+
+  const imported = snapshot.tickets.filter((t) => t.externalRef?.source === "clickup");
+  if (imported.length === 0) return null;
+
+  const structured = imported.filter((t) => t.source === "slack").length;
+  const withRequester = imported.filter((t) => t.requesterId !== null).length;
+  const categorised = imported.filter((t) => t.category !== "other").length;
+  const linked = imported.filter((t) => t.relatedSystemIds.length > 0).length;
+
+  const rows = [
+    {
+      label: "Requester known",
+      value: withRequester,
+      note: "Only the Slack intake form records who asked. The rest were pasted in.",
+    },
+    {
+      label: "Came through the intake form",
+      value: structured,
+      note: "These carry request type, impact and priority. The rest carry none.",
+    },
+    {
+      label: "Category inferred",
+      value: categorised,
+      note: "ClickUp has no category field — these were matched on keywords.",
+    },
+    {
+      label: "Linked to a system",
+      value: linked,
+      note: "Also inferred. Good enough to navigate by, not authoritative.",
+    },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div>
+          <CardTitle>Import quality</CardTitle>
+          <p className="mt-0.5 text-xs text-fg-muted">
+            {imported.length} tickets imported from ClickUp. What the source system did
+            not capture could not be imported.
+          </p>
+        </div>
+      </CardHeader>
+
+      <ul className="divide-y divide-line-soft">
+        {rows.map((row) => {
+          const pct = Math.round((row.value / imported.length) * 100);
+          return (
+            <li key={row.label} className="px-4 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-xs font-medium text-fg">{row.label}</span>
+                <span className="tabular shrink-0 text-xs text-fg-muted">
+                  {row.value} of {imported.length}
+                  <span
+                    className={cn(
+                      "ml-2 font-medium",
+                      pct >= 80 ? "text-success" : pct >= 40 ? "text-warning" : "text-critical",
+                    )}
+                  >
+                    {pct}%
+                  </span>
+                </span>
+              </div>
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-sunken">
+                <div
+                  className={cn(
+                    "h-full rounded-full",
+                    pct >= 80 ? "bg-success" : pct >= 40 ? "bg-warning" : "bg-critical",
+                  )}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-2xs leading-4 text-fg-subtle">{row.note}</p>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="border-t border-line-soft px-4 py-3">
+        <p className="text-2xs leading-5 text-fg-muted">
+          Priorities and SLA targets are <strong className="text-fg">not</strong> imported
+          — ClickUp records no priority on any of these tickets. The targets under SLA
+          Rules are placeholders and need the department&apos;s real expectations before
+          the attainment figure means anything.
+        </p>
+      </div>
+    </Card>
+  );
+}
+
 function DataSettings() {
   const { snapshot, dirty, reset } = useWorkspace();
 
@@ -719,6 +819,8 @@ function DataSettings() {
           ))}
         </div>
       </Card>
+
+      <ImportQuality />
 
       <Card>
         <CardHeader>

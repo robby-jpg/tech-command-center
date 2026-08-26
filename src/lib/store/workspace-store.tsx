@@ -258,6 +258,7 @@ function createActions(mutate: Mutate) {
           attachments: [],
           watcherIds: [],
           reopenCount: 0,
+          externalRef: null,
         };
 
         return withEvent(

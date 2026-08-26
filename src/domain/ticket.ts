@@ -267,7 +267,8 @@ export const ticketActivitySchema = z.object({
   id: entityId,
   ticketId: entityId,
   kind: z.enum(TICKET_ACTIVITY_KINDS),
-  actorId: entityId,
+  /** Null when the source system did not record who acted. */
+  actorId: entityId.nullable(),
   /** Human-readable, already resolved to display labels. */
   from: z.string().nullable(),
   to: z.string().nullable(),
@@ -294,7 +295,15 @@ export const ticketSchema = z.object({
   status: ticketStatusSchema,
   priority: ticketPrioritySchema,
   category: ticketCategorySchema,
-  requesterId: entityId,
+  /**
+   * Null when the source system did not record who asked.
+   *
+   * Most historical ClickUp tickets are in that position: the request was
+   * pasted in without attribution, and the only thing actually known is the
+   * department whose list it landed in. Naming a person there would be a
+   * guess, and a guess about who reported something is worse than a blank.
+   */
+  requesterId: entityId.nullable(),
   requesterDepartment: departmentKeySchema,
   assigneeId: entityId.nullable(),
   createdAt: isoDateTime,
@@ -317,6 +326,19 @@ export const ticketSchema = z.object({
   watcherIds: z.array(entityId),
   /** Set when a resolved ticket is reopened; drives the reopened-rate metric. */
   reopenCount: z.number(),
+  /**
+   * Where this record came from, when it was not created here. Keeping the
+   * origin id and a link back means an imported ticket can always be
+   * reconciled against the system it came from — and that a re-import can
+   * recognise what it has already seen instead of duplicating it.
+   */
+  externalRef: z
+    .object({
+      source: z.enum(["clickup", "slack", "salesforce", "jotform", "other"]),
+      id: z.string(),
+      url: z.string().nullable(),
+    })
+    .nullable(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 

@@ -78,7 +78,12 @@ export const activityEventSchema = z.object({
   /** e.g. "KHT-1042" or "Fabric Analytics Migration". */
   entityLabel: z.string(),
   action: activityActionSchema,
-  actorId: entityId,
+  /**
+   * Null when the source system did not record who acted. Imported history is
+   * frequently in that position; the UI says "Someone" rather than crediting
+   * the wrong person.
+   */
+  actorId: entityId.nullable(),
   /** Full sentence, already written for a human. */
   summary: z.string(),
   detail: z.string().nullable(),

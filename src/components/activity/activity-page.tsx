@@ -43,7 +43,7 @@ export function ActivityPage() {
     const q = search.trim().toLowerCase();
     return snapshot.activity.filter((event) => {
       if (types.length && !types.includes(event.entityType)) return false;
-      if (actors.length && !actors.includes(event.actorId)) return false;
+      if (actors.length && !actors.includes(event.actorId ?? "unknown")) return false;
       if (significantOnly && !event.significant) return false;
       if (q && !`${event.summary} ${event.entityLabel} ${event.detail ?? ""}`.toLowerCase().includes(q))
         return false;
@@ -77,7 +77,7 @@ export function ActivityPage() {
     const byActor: Record<string, number> = {};
     for (const event of snapshot.activity) {
       byType[event.entityType] = (byType[event.entityType] ?? 0) + 1;
-      byActor[event.actorId] = (byActor[event.actorId] ?? 0) + 1;
+      byActor[event.actorId ?? "unknown"] = (byActor[event.actorId ?? "unknown"] ?? 0) + 1;
     }
     return { byType, byActor };
   }, [snapshot.activity]);

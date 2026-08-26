@@ -1,0 +1,276 @@
+import type { ClickUpTask } from "@/lib/data/import/clickup";
+
+/**
+ * A capture of the real IT Tickets folder in ClickUp.
+ *
+ *   Workspace 9017052896 → Kind Home Development → IT Tickets
+ *   Captured 25 August 2026 · 200 tickets spanning 2 May – 24 August 2026
+ *
+ * Stored in a compact shape because the full ClickUp payload repeats the same
+ * assignee and a derivable URL on every row. `expand()` restores the shape the
+ * importer expects, so nothing downstream knows this file is abbreviated.
+ *
+ * This is a snapshot, not a source of truth. When the ClickUp API is wired up,
+ * the same `importTickets()` runs against live tasks and this file goes away.
+ *
+ * Field key:
+ *   i  ClickUp task id      s  ClickUp status (note: "recieved" is their spelling)
+ *   n  task name — the entire request, which is all ClickUp stores
+ *   l  list                 d  due date, epoch ms (the intake automation sets this)
+ *   c  date closed, epoch ms, or null while open
+ *   g  tags, where any
+ */
+
+type Captured = {
+  i: string;
+  n: string;
+  s: string;
+  l: "LEAD" | "CAM" | "PROD" | "SALES" | "SDR";
+  d: string | null;
+  c: string | null;
+  g?: string[];
+};
+
+const LIST_NAMES: Record<Captured["l"], { id: string; name: string }> = {
+  LEAD: { id: "901704769198", name: "Leadership Tickets" },
+  CAM: { id: "901704769200", name: "CAM Tickets" },
+  PROD: { id: "901704769202", name: "Production Tickets" },
+  SALES: { id: "901704769204", name: "Sales Tickets" },
+  SDR: { id: "901704769206", name: "SDR Tickets" },
+};
+
+/** Robby's ClickUp account. Every ticket in this folder is assigned to him. */
+const SOLE_ASSIGNEE = { id: 50313351, username: "Robby Barton" };
+
+function expand(rows: Captured[]): ClickUpTask[] {
+  return rows.map((row) => ({
+    id: row.i,
+    name: row.n,
+    status: row.s,
+    url: `https://app.clickup.com/t/${row.i}`,
+    priority: null,
+    assignees: [SOLE_ASSIGNEE],
+    tags: (row.g ?? []).map((name) => ({ name })),
+    due_date: row.d,
+    date_closed: row.c,
+    date_created: null,
+    list: LIST_NAMES[row.l],
+  }));
+}
+
+const CAPTURED: Captured[] = [
+  // ---- August 2026 ---------------------------------------------------------
+  { i: "86e2z80mh", n: "ive had two ifc issues in the last day. one ifc for christina Zaidi didnt come through at all from spotio. chloe did note aaron did it right and she was with him, so it wasnt that. then rennee bishop didnt convert through. not the same issues as with the other ones, so unclear why it didnt", s: "recieved", l: "CAM", d: "1787676090000", c: null },
+  { i: "86e2z335c", n: "New jobs need 3.3 barts:", s: "recieved", l: "PROD", d: "1787663630000", c: null },
+  { i: "86e2yuubb", n: "mikel said to do this now", s: "recieved", l: "CAM", d: "1787606537000", c: null },
+  { i: "86e2ymzwg", n: "Sarah Hess 3.3 Bart has no measures or numbers on crew sheet", s: "complete", l: "PROD", d: "1787595995000", c: "1787597230814" },
+  { i: "86e2ykqp7", n: "RR for the CSC team is pulling from the wrong month. it is pulling from the month they move it to, not the month they moved it from.", s: "recieved", l: "CAM", d: "1787593480000", c: null },
+  { i: "86e2y1g7f", n: "Add zaps to JZ landscaping and painting crew slack channel", s: "complete", l: "PROD", d: "1787410888000", c: "1787596501255" },
+  { i: "86e2xqaeu", n: "Autmoation for Company cam creation is down", s: "complete", l: "SALES", d: "1787329670000", c: "1787581942005" },
+  { i: "86e2xpagw", n: "leads are not populating into SF at all", s: "complete", l: "CAM", d: "1787326930000", c: "1787581939580" },
+  { i: "86e2xngj4", n: "BARTS Are not being created. Manual Create button is not working", s: "complete", l: "SALES", d: "1787324556000", c: "1787581937101" },
+  { i: "86e2xkzut", n: "robby. the apptoto for daniela garcia didnt come into sf", s: "complete", l: "CAM", d: "1787320839000", c: "1787581935087" },
+  { i: "86e2x4hdu", n: "Something funky is goin on with Priya Longin 3.3. Looks like F50 is dropped down and messing with some things.", s: "complete", l: "PROD", d: "1787241438000", c: "1787582467793" },
+  { i: "86e2x40mr", n: "Glenn Runkewich INT BART - Missing measurements", s: "complete", l: "PROD", d: "1787240287000", c: "1787582474698" },
+  { i: "86e2x40k0", n: 'Can we please update the notes template in the "CAM Color Notes for CC" to this:', s: "complete", l: "CAM", d: "1787240264000", c: "1787596189747" },
+  { i: "86e2x3x2d", n: 'Can you please add the time window in the "Your (PW/WW/GUTT) Is Scheduled for Tomorrow!" email that we also have in the first automated email that goes out.', s: "recieved", l: "CAM", d: "1787239916000", c: null },
+  { i: "86e2x3akd", n: "Sarah Hess. Bart is missingg measurements", s: "complete", l: "PROD", d: "1787238123000", c: "1787582480425" },
+  { i: "86e2we7t0", n: "BART for interior for Kurt Reinecke", s: "complete", l: "PROD", d: "1787146593000", c: "1787582503531" },
+  { i: "86e2w9e79", n: "William Briggs new 3.3 is buggy", s: "complete", l: "PROD", d: "1787099873000", c: "1787582513428" },
+  { i: "86e2w5t2t", n: "William Briggs 3.3", s: "complete", l: "PROD", d: "1787084590000", c: "1787085818679" },
+  { i: "86e2w5hdk", n: "TICKET SUBMITTED BY @corey\n\n*Request Type:*\nOutage\n*Request:* \nKHP Gravity form submissions not zapping properly. \"Project Details\" are not being included.\n*Impact:*\nMajor slowdown, Cannot work at all\n*Priority:*\nHigh", s: "recieved", l: "LEAD", d: "1787602520000", c: null },
+  { i: "86e2w4t0x", n: "Kathryn Weathers Bart 3.3 is producing some errors for crew pay and I don't know how to fix it. It does have 18in soffits, which may be an issue I'm hearing, but the problem seems to be coming from the Prep pay out.", s: "complete", l: "PROD", d: "1787082387000", c: "1787085822790" },
+  { i: "86e2vta1y", n: "Bart 3.3 Dave Meisinger's", s: "complete", l: "PROD", d: "1787053474000", c: "1787085602817" },
+  { i: "86e2vq1ue", n: "I'm all of the sudden getting calendar reminders and voice recording notifications from Salesforce. Can they be turned off?", s: "recieved", l: "SALES", d: "1787024073000", c: null },
+  { i: "86e2vewfa", n: "TICKET SUBMITTED BY @treven\n\n*Request Type:*\nSupport\n*Request:* \nSDR manager doors not showing in scorecard \n*Impact:*\nMinor inconvenience\n*Priority:*\nLow", s: "complete", l: "SDR", d: "1786991951000", c: "1787084906440" },
+  { i: "86e2ub7mx", n: "hey robby. got any fun weekend plans? anyways, the pd signed email is coming through when the pd hasnt been signed. can you look at kim cohn please, ill forward the email to you", s: "recieved", l: "CAM", d: "1786715754000", c: null },
+  { i: "86e2u6nb4", n: "3.3 Bart for Emmy Hise, interior one looks funkyyy", s: "complete", l: "PROD", d: "1786673815000", c: "1786730560973" },
+  { i: "86e2twz9j", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nCan i get a username login info for Gavin Wood please for Salesforce. we haven't been able to log him in.\n*Impact:*\nMajor slowdown\n*Priority:*\nHigh", s: "complete", l: "LEAD", d: "1786641083000", c: "1786730576626" },
+  { i: "86e2thg3u", n: "3.3 Fixed WW panes when changed on the copy of bart, don't change the crew labor. You can only change it on the original ext measure for it to change the crew sheet", s: "complete", l: "PROD", d: "1786576466000", c: "1786729999059" },
+  { i: "86e2thfhm", n: 'can we change ww size drop down "3.5_in" to be labeled as "3.5_in_BEAD_BOARD_Soffit" in the master ww page in bart?', s: "complete", l: "PROD", d: "1786576358000", c: "1786729660277" },
+  { i: "86e2tgk0m", n: "INT bart for Brian day looks a little funky? Think I need 3.3", s: "complete", l: "PROD", d: "1786572447000", c: "1786729657730" },
+  { i: "86e2tg9y2", n: 'Interior Bart "Desciption" Box does not allow Copy/Paste into PandaDoc', s: "complete", l: "SALES", d: "1786571478000", c: "1787596964559" },
+  { i: "86e2tdqr6", n: "PFAD Opps do not have a field for prelim services. IF it is an EXT opp and it gets shaved down to a PFAD price it does. But for like PFAD opps for a fence or deck, those should always be washed and we are not able to get that info into SF", s: "complete", l: "PROD", d: "1786564965000", c: "1786741098628" },
+  { i: "86e2tdngt", n: "MVP Competition spreadsheet is not showing accurate numbers. Becki has had 2 blue sheets turned in that aren't showing up as an example. james has points", s: "complete", l: "PROD", d: "1786564788000", c: "1786730329289" },
+  { i: "86e2rnb3a", n: "Can we get a pricing section for built-in shelving (And dial in realistic pricing) on the cabinet bart tab?", s: "recieved", l: "SALES", d: "1787761529000", c: null },
+  { i: "86e2r9h0n", n: "Can I pleasee get this Bart 3.3. It is Christina McNamara actual Bart", s: "complete", l: "PROD", d: "1786405779000", c: "1786729435404" },
+  { i: "86e2r4fwm", n: 'hey robby, i dont know if this is a function that SF can even support, but kendall is always like "jess, use the IT requests" and im like "okay" so can we add a filter to dashboards in SF for FR', s: "recieved", l: "CAM", d: "1786393370000", c: null },
+  { i: "86e2qvg5p", n: "TICKET SUBMITTED BY @yasmine\n\n*Request Type:*\nRequest\n*Request:* \nCan we get a new jotform option included for all 3 of us that is specific to projects only doing cabinet painting? Our jotforms currently only link to either interior and exterior crfs please and thank ya!!\n*Impact:*\nMinor inconvenience\n*Priority:*\nMedium", s: "recieved", l: "LEAD", d: "1787672751000", c: null },
+  { i: "86e2quwy1", n: "Clear my passkey for salesforce please can't work", s: "complete", l: "PROD", d: "1786375154000", c: "1786729409019" },
+  { i: "86e2py7vp", n: "3.3 for j-17740", s: "complete", l: "PROD", d: "1786107384000", c: "1786730461827" },
+  { i: "86e2pbbgn", n: "Can you help Jeff get back into his Salesforce for J-17740 and J-17894. He's getting error messages, I believe from going into the jobs during a sf update", s: "complete", l: "PROD", d: "1786042125000", c: "1786730449138" },
+  { i: "86e2p4vg2", n: "Need 3.3 copy of Bart for the following please", s: "complete", l: "PROD", d: "1786031780000", c: "1786730455921" },
+  { i: "86e2npwmq", n: "Hey Robby, are all of the 3.3's a little broken right now? Looking at Demetre Pickering - EXT - BART 3.2 (NEW) and not sure what crew pay is. Very different from 3.3 and 3.2.", s: "complete", l: "PROD", d: "1785966482000", c: "1786730439909" },
+  { i: "86e2nkqq5", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nOutage\n*Request:* \nPaint Scheduling Push template: warranty monthly push : column F is broken\n*Impact:*\nMinor inconvenience\n*Priority:*\nLow", s: "complete", l: "LEAD", d: "1785957771000", c: "1785962126056" },
+  { i: "86e2n5emg", n: "Sheri Kabeya BART - something's broke and a lot of cells on crew page say #VALUE", s: "complete", l: "PROD", d: "1785898435000", c: "1785957023237" },
+  { i: "86e2n4q41", n: "Stephanie Hellman 3.3 please", s: "complete", l: "PROD", d: "1785891089000", c: "1785956803635" },
+  { i: "86e2n424x", n: "I am trying to add/update contact info via the calendar but after a few hours all my edits disappear.", s: "idea", l: "SALES", d: "1785886207000", c: null },
+  { i: "86e2n2vz8", n: "crew slack channel. if a sub agreement is MODIFIED in between job started and completed, can we have slack channel alert update to the new amount? otherwise the original amount is shown and the subs question it.", s: "recieved", l: "PROD", d: "1787695008000", c: null },
+  { i: "86e2n2tq9", n: 'crew slack channels. when the status changes to completed, can we please add "date to be paid" to appear in the slack channel post?', s: "recieved", l: "PROD", d: "1787694787000", c: null },
+  { i: "86e2n10m9", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nOutage\n*Request:* \nNew WW jot form issue in Anthony's cal events. Pleasee see video from my cell phones vs Anthony's view. Strange things Happening. \n\nPart two- is new jot form zapping back to salesforce job? \n*Impact:*\nMajor slowdown\n*Priority:*\nHigh", s: "complete", l: "LEAD", d: "1786999208000", c: "1786747117879" },
+  { i: "86e2mzyg2", n: "hi robby. please enjoy the same freedom that birds do without your bones being hollow (flying). ifcs for 80123 are coming through w/ the city as columbine valley and not littleton and the system isnt recognizing it so its half converting things and failing. please help.", s: "recieved", l: "CAM", d: "1785873407000", c: null },
+  { i: "86e2mu40x", n: "Copy of BART 3.3 for Mike Snider please", s: "complete", l: "PROD", d: "1785862021000", c: "1785956450118" },
+  { i: "86e2mtrqj", n: "Copy of BART for Denise Wightman", s: "complete", l: "PROD", d: "1785861128000", c: "1785956396332" },
+  { i: "86e2mb312", n: "Interior crew sheet needed", s: "complete", l: "PROD", d: "1785789079000", c: "1785957060553" },
+  { i: "86e2m48hp", n: "Erin perkins Bart - no crew sheet working", s: "complete", l: "PROD", d: "1785771552000", c: "1785957043007" },
+  { i: "86e2ktjvr", n: "Jody Burnett 3.3 please", s: "complete", l: "PROD", d: "1785684630000", c: "1785957063513" },
+  { i: "86e2k8mzx", n: "missing 3.3 Barts on quite a few jobs can we keep pushing 3.3 please", s: "complete", l: "PROD", d: "1785521270000", c: "1785958456861" },
+  { i: "86e2k8ezm", n: "Need crew pay for James Bailey", s: "complete", l: "PROD", d: "1785520762000", c: "1785958452953" },
+  { i: "86e2jxzpy", n: "3.3 Roxy Ho", s: "complete", l: "PROD", d: "1785462769000", c: "1785958442042" },
+  { i: "86e2jxkge", n: "3.3 for Tiny Lindelien", s: "complete", l: "PROD", d: "1785458602000", c: "1785958446279" },
+  { i: "86e2jr9vk", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nScorecard OMG logging will need to be switched to Client feedback OMG object, instead of OMG click box in job.\n*Impact:*\nNice-to-have\n*Priority:*\nLow", s: "recieved", l: "LEAD", d: "1787684046000", c: null },
+  { i: "86e2j8va4", n: "Selecting no on Bart right elevation blocks everything in front elevation as well", s: "complete", l: "SALES", d: "1785356015000", c: "1787086746157" },
+  { i: "86e2hpj72", n: "$38 for privacy wall on every copy of Bart", s: "complete", l: "PROD", d: "1785267188000", c: "1785355761665" },
+  { i: "86e2hk5q2", n: "TICKET SUBMITTED BY @yasmine\n\n*Request Type:*\nRequest\n*Request:* \nI would like to add a \"Color Due Date\" box to our jotform that is exactly like the Mock-up Due Date option. Could you put it at the top under the client's email? Also I haven't been receiving a copy of Emma's jotforms anymore, would like to get those to start sending to me again\n*Impact:*\nNice-to-have\n*Priority:*\nLow", s: "complete", l: "LEAD", d: "1785259870000", c: "1785958573551" },
+  { i: "86e2hjuc8", n: "Mikele Hushing 3.3 please", s: "complete", l: "PROD", d: "1785259195000", c: "1785355756348" },
+  { i: "86e2h6den", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nadd rigo to field rep jot form and in salesforce\n*Impact:*\nNice-to-have\n*Priority:*\nLow", s: "complete", l: "LEAD", d: "1785189365000", c: "1785958605067" },
+  { i: "86e2g11b2", n: 'hey robby, i know that ive submitted a lot of requests today and just know that the reason i stopped was for a moment i just thought "spotio will always fail" and then i rallied and im back. this lead didnt come through with a last name. chloe says it had one in spotio and we\'re not sure why it did that. can you help?', s: "complete", l: "CAM", d: "1784903026000", c: "1784920472386" },
+  { i: "86e2g0d8p", n: "ifcs still coming through twice. allen sosniak and bill rhyne are examples", s: "complete", l: "CAM", d: "1784901611000", c: "1784912892575" },
+  { i: "86e2g07ut", n: "J-17492", s: "complete", l: "CAM", d: "1784901092000", c: "1784912724954" },
+  { i: "86e2fyje3", n: "Nathan Roeller int and ext Bart 3.3. There are two separate ones I believe", s: "complete", l: "PROD", d: "1784893534000", c: "1784909899767" },
+  { i: "86e2f82ar", n: "TICKET SUBMITTED BY @treven\n\n*Request Type:*\nRequest\n*Request:* \nSDR hourly chart to slack every morning \n*Impact:*\nNice-to-have\n*Priority:*\nMedium", s: "recieved", l: "SDR", d: "1784758329000", c: null },
+  { i: "86e2f4a69", n: "estimators cant push charlottes jobs to closed won", s: "complete", l: "CAM", d: "1784749284000", c: "1784836151963" },
+  { i: "86e2ez3wu", n: "Crew sheet Gary Sutton new j-17476", s: "complete", l: "PROD", d: "1784737106000", c: "1784786741103" },
+  { i: "86e2eekvn", n: 'Can we please swap places for the "Final Gutter Price" and the "Final WW Price w/discount"?', s: "complete", l: "CAM", d: "1784657684000", c: "1784786630562" },
+  { i: "86e2eehjz", n: "ROBBY! Hello! Can we please update the maintenance job files in the CAM Notes for PM to this:", s: "complete", l: "CAM", d: "1784657492000", c: "1784786635647" },
+  { i: "86e2e2duh", n: "Barbara jones copy of bar 3.3", s: "complete", l: "PROD", d: "1784590437000", c: "1784649505081" },
+  { i: "86e2e0pjk", n: 'hey robby, can we have an automated email from teh cab team after their PM has been assigned that says "meet your PM" like with estimators', s: "recieved", l: "CAM", d: "1784585274000", c: null },
+  { i: "86e2dz14h", n: "Looker studio has been down all day", s: "complete", l: "SALES", d: "1784580733000", c: "1784649453641" },
+  { i: "86e2dwdy9", n: "Steve Priscilla 3.3 bart please", s: "complete", l: "PROD", d: "1784574510000", c: "1784649457102" },
+  { i: "86e2dvbpr", n: 'hey robby, when we auto convert ifcs, can it recognize dupes so that it doesnt create a separate account/contact? if it still needs to create it but it recognizes the dupe, can it label it as like "Bob Smith 2"? Also i know we talked about this but is there a way to fix the way those addresses come in?', s: "recieved", l: "CAM", d: "1784571873000", c: null },
+  { i: "86e2drcq5", n: "It doesn't look like the zap for a plus Denver painting payroll is working for the crew slack channel?", s: "complete", l: "PROD", d: "1784565586000", c: "1784649479052" },
+  { i: "86e2dr2ph", n: "Cassie Perez 3.3", s: "complete", l: "PROD", d: "1784564807000", c: "1784573326372" },
+  { i: "86e2dpawb", n: "Wes Kartus 3.3 Bart", s: "complete", l: "PROD", d: "1784560704000", c: "1784573323396" },
+  { i: "86e2cgt8r", n: "robbyyyyyyy. robert. roberto. hello. it seems every time we get a new sdr their ifcs come through twice. can you help?", s: "complete", l: "CAM", d: "1784239051000", c: "1784573314422" },
+  { i: "86e2cfc62", n: "Missing interior measure tab on my BART for Andres Bautista", s: "complete", l: "SALES", d: "1784234711000", c: "1784573318348" },
+  { i: "86e2cdp7z", n: "Joan machamer 3.3", s: "complete", l: "PROD", d: "1784230879000", c: "1784231314778" },
+  { i: "86e2bxde5", n: "Same Romeo 3.3", s: "complete", l: "PROD", d: "1784154193000", c: "1784156322221" },
+  { i: "86e2bxd4a", n: "Wayne Adams 3.3", s: "complete", l: "PROD", d: "1784154130000", c: "1784156319111" },
+  { i: "86e2bwyp6", n: "Bob Hoelsken 3.3 Bart needed - please use the BOB HOELSKEN USE ME Bart!!", s: "complete", l: "PROD", d: "1784152382000", c: "1784153620801" },
+  { i: "86e2bcraw", n: "3.3 for Curtis Fitt", s: "complete", l: "PROD", d: "1784081587000", c: "1784122458619" },
+  { i: "86e2bcr52", n: "Bob Hoelsken - this Bart looks empty? Both 3.2 and 3.3 copies", s: "complete", l: "PROD", d: "1784081524000", c: "1784153618433" },
+  { i: "86e2bbre7", n: "Bart 3.3 for Mike Bueno", s: "complete", l: "PROD", d: "1784075122000", c: "1784122285406" },
+  { i: "86e2bbrbw", n: "Bart 3.3 for David vaneaton", s: "complete", l: "PROD", d: "1784075067000", c: "1784121886692" },
+  { i: "86e2arfjn", n: "Ryan Anderson 3.3", s: "complete", l: "PROD", d: "1783992943000", c: "1784034079283" },
+  { i: "86e2aq0cr", n: "Steve Hecksher 3.3 Bart", s: "complete", l: "PROD", d: "1783983039000", c: "1783983273795" },
+  { i: "86e2apame", n: "Need a copy of INT Bart for Erin Upton - EXT/INT - BART 3.2 (NEW)", s: "complete", l: "PROD", d: "1783980575000", c: "1783980803614" },
+  { i: "86e2ampye", n: "Rear trim fascia formula is broken for CGCH/79 in 3.3 copy of bart. Just tagged you", s: "complete", l: "PROD", d: "1783975073000", c: "1783980811512" },
+  { i: "86e2akb9y", n: "Seth Gregory 3.3 Bart!", s: "complete", l: "PROD", d: "1783971942000", c: "1783980799794" },
+  { i: "86e2a3tjk", n: "3.3 for Lily & Jeff Montez", s: "complete", l: "PROD", d: "1783910521000", c: "1783980796342" },
+  { i: "86e2a0qge", n: "I have no copy of Bart for Johan debeshe", s: "complete", l: "PROD", d: "1783873300000", c: "1783980793864" },
+  { i: "86e29npw9", n: "could we please get the 3.3 copy of bart job costing receipts section formulas wiped? we'd rather they show $0 than the formulas to begin with and we shouldnt need anything pulled over from 3.2 copy of page for our receipt entry.", s: "complete", l: "PROD", d: "1783722400000", c: "1783980823335" },
+  { i: "86e29kknz", n: "Rachel Lee 3.3 Bart", s: "complete", l: "PROD", d: "1783714724000", c: "1783714847233" },
+
+  // ---- July 2026 -----------------------------------------------------------
+  { i: "86e29ewzf", n: "Need copy of Bart for Jason Daub", s: "complete", l: "PROD", d: "1783700738000", c: "1783712822851" },
+  { i: "86e29ekf6", n: "Need 3.3 for Bob Hoelsken", s: "complete", l: "PROD", d: "1783700040000", c: "1783712820102" },
+  { i: "86e2958ne", n: "Need Bart 3.3 for holly and Kurt akin", s: "complete", l: "PROD", d: "1783635726000", c: "1783714851163" },
+  { i: "86e28q4cf", n: "Needed 3.3 Bart for tom Rand", s: "complete", l: "PROD", d: "1783601661000", c: "1783603315004" },
+  { i: "86e28gmcc", n: "marcos leads are coming through wiht tow names on them", s: "recieved", l: "CAM", d: "1783547517000", c: null },
+  { i: "86e28b1yf", n: 'Issues with 3.3 Copy of Bart. i\'ve highlighted everything in PINK that needs formulas fixed. Please use "lindsay Rebid" tab in this bart.', s: "complete", l: "PROD", d: "1783534859000", c: "1783545979694" },
+  { i: "86e28amdp", n: "Need a 3.3 copy of bart for Charlie Lockhart please", s: "complete", l: "PROD", d: "1783533814000", c: "1783534278561" },
+  { i: "86e28672r", n: "TICKET SUBMITTED BY @chloe.hackathorn\n\n*Request Type:*\nRequest\n*Request:* \nCharlotte Bevers taken off summer refresh competition for my team \n*Impact:*\nMinor inconvenience\n*Priority:*\nHigh", s: "complete", l: "SDR", d: "1783524304000", c: "1783533808148" },
+  { i: "86e2823qb", n: "Tommy Nguyen copy of Bart isn't producing anticipated profit margin %", s: "complete", l: "PROD", d: "1783511692000", c: "1783518832225" },
+  { i: "86e27ywtc", n: "Need Bart 3.3 for j-16992", s: "complete", l: "PROD", d: "1783472981000", c: "1783518832225" },
+  { i: "86e27qzrh", n: "The SF AC keeps popping up since their latest update", s: "complete", l: "CAM", d: "1783448819000", c: "1783534380870" },
+  { i: "86e27evag", n: "Need INT Bart for Molly Dishman j-17474", s: "complete", l: "PROD", d: "1783424712000", c: "1783518832225" },
+  { i: "86e27bxk7", n: "Need 3.3 Bart for Chuck Andrade", s: "complete", l: "PROD", d: "1783391202000", c: "1783518832225" },
+  { i: "86e273x3g", n: "Copy of Bart isn't producing final profit margin %", s: "complete", l: "PROD", d: "1783363650000", c: "1783365445035" },
+  { i: "86e272t1g", n: "TICKET SUBMITTED BY @corey\n\n*Request Type:*\nSupport\n*Request:* \nCar mag and bbb on marketing sc\n*Impact:*\nMinor inconvenience\n*Priority:*\nMedium", s: "complete", l: "LEAD", d: "1783362561000", c: "1783362681168" },
+  { i: "86e26u6rh", n: "Heather Millard - can't get interior measurements to populate in the copy of INT Bart. There's two separate ones", s: "complete", l: "PROD", d: "1783353740000", c: "1783365442601" },
+  { i: "86e251120", n: "Kaylee Hyman INT bart isn't producing any crew labor numbers", s: "complete", l: "PROD", d: "1783042433000", c: "1783364768380" },
+  { i: "86e243c24", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nWarranty Push tool: i need calendar event date (column E) to adjust the projected start date please when it pushes\n*Impact:*\nNice-to-have\n*Priority:*\nLow", s: "complete", l: "LEAD", d: "1782929935000", c: "1783533832880" },
+  { i: "86e22zxfb", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nOutage\n*Request:* \nClient Feedback PUSH tool isn't attaching the Job # to the client feedback record. i'm going in manually and adding the j- number\n*Impact:*\nMinor inconvenience\n*Priority:*\nHigh", s: "complete", l: "LEAD", d: "1782783674000", c: "1783553025180" },
+  { i: "86e22zujt", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nneed to add gavin wood to review push tool - he doesnt have a salesforce account to link his ID\n*Impact:*\nMinor inconvenience\n*Priority:*\nLow", s: "complete", l: "LEAD", d: "1782782824000", c: "1783533820764" },
+  { i: "86e22xm35", n: "Copy of Bart has fixed receipt totals of $16.89 and $30.11 that are now populating in everyone's barts today. It's even replacing some receipt totals that were already entered.", s: "recieved", l: "PROD", d: "1782770592000", c: null },
+  { i: "86e22ucdx", n: "TICKET SUBMITTED BY @corey\n\n*Request Type:*\nOutage\n*Request:* \nBluesheets & Field Rep leads getting entered automatically in SF as Interior\n*Impact:*\nMajor slowdown\n*Priority:*\nHigh", s: "recieved", l: "LEAD", d: "1782762476000", c: null },
+  { i: "86e22nfpg", n: "Copy of Bart with crew pay j-17322", s: "complete", l: "PROD", d: "1782748405000", c: "1783365409204" },
+  { i: "86e22m693", n: "Warranty calendar block for Kathi Tafoya J-17166 will not populate to Phillip's calendar", s: "complete", l: "CAM", d: "1782745021000", c: "1783365405427" },
+  { i: "86e21j5yk", n: "Numbers are producing on the crew worksheet", s: "complete", l: "PROD", d: "1782432225000", c: "1783365470784" },
+  { i: "86e21fm09", n: "copy of bart needs fixing.", s: "complete", l: "PROD", d: "1782420443000", c: "1783365473291" },
+  { i: "86e21b8rc", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nwarranty maintenance record types need CC link\n*Impact:*\nNice-to-have\n*Priority:*\nHigh", s: "recieved", l: "LEAD", d: "1782410468000", c: null },
+  { i: "86e21ay7n", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nplease add # of doors and drawers field into cab record type calendar events\n*Impact:*\nNice-to-have\n*Priority:*\nHigh", s: "complete", l: "LEAD", d: "1782409911000", c: "1783534549697" },
+  { i: "86e219v25", n: "BART Copy - Glenda Crespin - No numbers included.", s: "complete", l: "PROD", d: "1782407355000", c: "1783365529323" },
+  { i: "86e2106yj", n: "INT BART for Will metcalf will not come up with any costs!", s: "complete", l: "SALES", d: "1782344085000", c: "1783365812071" },
+  { i: "86e20mtvm", n: "Bart Copy- Cheri & Jeff Hurd - checked the box but it didn't populate.", s: "complete", l: "PROD", d: "1782310756000", c: "1783364978130" },
+  { i: "86e20ezuu", n: "Jonathan jaggers Bart isn't producing the final %%%", s: "complete", l: "PROD", d: "1782257989000", c: "1783364971217" },
+  { i: "86e1zx5fz", n: "BART copy- Yong Ibeling - No measurements or crew pay", s: "complete", l: "PROD", d: "1782175914000", c: "1782176560086" },
+  { i: "86e1zwmce", n: "pandadoc users are limited in viewability for gavin, adam, and rigo. can you check their permissions?", s: "complete", l: "PROD", d: "1782172372000", c: "1782177450542" },
+  { i: "86e1zwjdv", n: "Not letting me assign Rigo Rios as Assigned Project Manager", s: "complete", l: "PROD", d: "1782172010000", c: "1782177457621" },
+  { i: "86e1zvky8", n: "My crew sheet isn't populating a number after entering numbers", s: "complete", l: "PROD", d: "1782167584000", c: "1782760091457" },
+  { i: "86e1zu2w2", n: "TICKET SUBMITTED BY @treven\n\n*Request Type:*\nSupport\n*Request:* \nIFC/door ratio per region \n*Impact:*\nNice-to-have\n*Priority:*\nMedium", s: "recieved", l: "LEAD", d: "1782162097000", c: null },
+  { i: "86e1zr3kx", n: "aircall calls not loggin in sf", s: "complete", l: "CAM", d: "1782158322000", c: "1782760103041" },
+  { i: "86e1zher9", n: "Editing the PD (when it comes to changing the size of the font) on the scope of work section stopped working. I can set it to Poppins, but when trying to set it to size 12, it doesn't do itttttt", s: "complete", l: "SALES", d: "1782144247000", c: "1782176040537" },
+  { i: "86e1z8fkm", n: "J-17116 Amber Struthers and Meghan Nettles copy of Bart totals won't add up to show me my %%%", s: "complete", l: "PROD", d: "1782070500000", c: "1782178626412" },
+  { i: "86e1yde0y", n: "TICKET SUBMITTED BY @michael\n\n*Request Type:*\nOutage, Support\n*Request:* \nFront elevation unpainted brick is not getting calculated currently.\n*Impact:*\nMajor slowdown\n*Priority:*\nHigh", s: "complete", l: "LEAD", d: "1781820512000", c: "1783365740946" },
+  { i: "86e1xwwwn", n: "Hi! My copy of Bart for Lisa carden is a bit jacked up. I need the detached structure to populate into the crew sheet and I think the formulas are on the wrong lines for some overall measurements", s: "complete", l: "PROD", d: "1781739155000", c: "1783365732116" },
+  { i: "86e1xrq2j", n: "Mike Doody copy of Bart isn't production a profit margin", s: "complete", l: "PROD", d: "1781728341000", c: "1783365692958" },
+  { i: "86e1wxman", n: "Need copy of Bart for Cassandra Bolton-CABS (exterior copy of Bart has no measurements)", s: "complete", l: "PROD", d: "1781620072000", c: "1783365748171" },
+  { i: "86e1vr3jx", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nBART to SALESFORCE request: could we get the bart to send the estimated material cost into salesforce?\n*Impact:*\nNice-to-have\n*Priority:*\nLow", s: "recieved", l: "LEAD", d: "1781305729000", c: null },
+  { i: "86e1v4y51", n: "TICKET SUBMITTED BY @yasmine\n\n*Request Type:*\nSupport, Request\n*Request:* \nEmma's jotform signature needs the phone number changed to hers\n\nAlso when clients respond to Emma's jotform emails they are coming to my email\n*Impact:*\nMinor inconvenience\n*Priority:*\nMedium", s: "complete", l: "LEAD", d: "1781220824000", c: "1781294461330" },
+  { i: "86e1uyhte", n: "hey robby. ifcs are coming through twice for collin smith.", s: "complete", l: "CAM", d: "1781206925000", c: "1781293752640" },
+  { i: "86e1unz7a", n: "robby can you verify the emails of all of the team in SF? I got an email from them, ill attach photoo", s: "complete", l: "CAM", d: "1781185117000", c: "1781293743161" },
+  { i: "86e1u1w3h", n: "Measurements for railings in the Bart are not producing a price for the crews in the crew sheet in Bart. Examples are nick ingmire and Jessica may long.", s: "complete", l: "PROD", d: "1781102488000", c: "1783365672686" },
+  { i: "86e1ty6md", n: "Hee Nam Kim-j-17095", s: "complete", l: "PROD", d: "1781084852000", c: "1781128660565" },
+  { i: "86e1t30hk", n: "hi robby. this one is actually my bad but when i added austin to hubstaff i didnt add any roles for him and it said that it hated me and i cant do that. can you help?", s: "complete", l: "CAM", d: "1780958748000", c: "1781128698057" },
+  { i: "86e1t2pz1", n: "ROBBY! Can you please look into why we cannot generate a PDF receipt for someone's invoice in SF?", s: "recieved", l: "CAM", d: "1780957813000", c: null },
+  { i: "86e1rz8c1", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nonboarding checklist for Rigo\n*Impact:*\nCannot work at all\n*Priority:*\nHigh", s: "complete", l: "LEAD", d: "1780947940000", c: "1781128670471" },
+  { i: "86e1r51x7", n: "Pergola light vs heavy prep pricing is the same", s: "recieved", l: "SALES", d: "1780699968000", c: null },
+  { i: "86e1qkjkr", n: "Clients are receiving QB invoices without asking for them to be sent. Examples; Margie Feinberg, Mark Groshek", s: "complete", l: "PROD", d: "1780607023000", c: "1780946812797" },
+  { i: "86e1qjt4y", n: 'Drop down on Bart for "client left at minute" has wrong selections for "summer, fall, spring, etc"', s: "complete", l: "SALES", d: "1780604329000", c: "1783365860385" },
+  { i: "86e1q66dn", n: "Unpainted brick add on is including the wood windows (automatic add-on) in the pricing. So the wood windows are being double counted in the price in the 3 product options (emerald, RR, aura), AND the loxon xp option.", s: "complete", l: "SALES", d: "1780528508000", c: "1783365762784" },
+  { i: "86e1q2a9u", n: "Becki Referrals are not populating in scorecard. her field rep name in Salesforce is BEKCI.. so it may be a vlookup error.", s: "complete", l: "PROD", d: "1780514912000", c: "1780946053912" },
+  { i: "86e1phqrj", n: "Mary Baxter copy of the Bart is bugged", s: "complete", l: "PROD", d: "1780434901000", c: "1783365788626" },
+  { i: "86e1pdhzx", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \ncahnge the Client feedback - review - review score, to a pick list, instead of a text field.\n*Impact:*\nMinor inconvenience\n*Priority:*\nLow", s: "complete", l: "LEAD", d: "1780423866000", c: "1780946066835" },
+  { i: "86e1pc6t5", n: "hi roberto. i know youre flying (congrats on the wings) but im gonna add something to SF that might break all your things so im giving you 24 hours (this is a hostage situation) for jardly so that he can click it for no more follow up. like dnc or project completed.", s: "complete", l: "CAM", d: "1780420258000", c: "1783365829306" },
+  { i: "86e1p1gc6", n: "Jerry hedges j-15164", s: "complete", l: "PROD", d: "1780367267000", c: "1780946832356" },
+  { i: "86e1nz3j5", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nSupport\n*Request:* \nAdd Gavin to PANDADOC\n*Impact:*\nMajor slowdown\n*Priority:*\nHigh", s: "complete", l: "LEAD", d: "1780353149000", c: "1780359872865" },
+  { i: "86e1nrfk4", n: "hello. can i ghet a form for pms to put blue sheets into. jon asked me to submit this. or a tool that reads it and imports it into a list.", s: "recieved", l: "CAM", d: "1780336292000", c: null },
+  { i: "86e1ne2cq", n: "hello robby. it is me again, a-mario. the pw emails are still not sending. at least they didnt for lief erikson. perhaps because he is a viking from another time?", s: "complete", l: "CAM", d: "1780321647000", c: "1780359866859" },
+  { i: "86e1kw667", n: "grace swanson doesnt have access to barts", s: "complete", l: "CAM", d: "1780002123000", c: "1780006202233" },
+  { i: "86e1k2uvr", n: "BART for Angie Rowe", s: "complete", l: "PROD", d: "1779905914000", c: "1780006210948" },
+  { i: "86e1jyv1g", n: "Emerald Timing Discount May be too high in the Bart. When you put the amount in the calculator it takes the margin to 52%", s: "complete", l: "SALES", d: "1779895993000", c: "1783534602401" },
+  { i: "86e1henj3", n: "Error message when trying to save John Moraire salesforce", s: "recieved", l: "PROD", d: "1779629742000", c: null },
+  { i: "86e1gzn0m", n: "BART for J-16891", s: "complete", l: "PROD", d: "1779464744000", c: "1779824017432" },
+  { i: "86e1gzg6e", n: "Ext copy of Bart for David Price with measurements j-16047", s: "complete", l: "PROD", d: "1779464186000", c: "1779824025822" },
+  { i: "86e1gtr41", n: "Request EXT bart for Matt Reich j-16103", s: "complete", l: "PROD", d: "1779415407000", c: "1779827958662" },
+  { i: "86e1gr3h7", n: "Chris can't access salesforcece", s: "complete", l: "PROD", d: "1779402994000", c: "1783534679848" },
+  { i: "86e1g01fu", n: "Task For Paid iN fiull. for the PC.", s: "complete", l: "LEAD", d: "1779274800000", c: "1779828599856" },
+  { i: "86e1fyk7m", n: 'SF 16979 Carly elmgren. The job in salesforce will not let us update pricing and save. Pops up with an error message saying "REQUIRED_FIELD_MISSING: Required fields are missing: [RelationId]." Helppppp', s: "complete", l: "PROD", d: "1779297549000", c: "1779297741618" },
+  { i: "86e1fv6q1", n: "apptoto responses not coming into the leads email", s: "complete", l: "CAM", d: "1779287790000", c: "1783534688777" },
+  { i: "86e1fkmwy", n: "PC RR is weird", s: "complete", l: "CAM", d: "1779229019000", c: "1780364827041" },
+  { i: "86e1fhur2", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \nWW and GUTT calendar events being moved on calendar is not sending the new information BACK to salesforce. Please fix this (connection?)\n*Impact:*\nMinor inconvenience\n*Priority:*\nHigh", s: "recieved", l: "LEAD", d: "1779482458000", c: null },
+  { i: "86e1fbd9z", n: "TICKET SUBMITTED BY @lindsay\n\n*Request Type:*\nRequest\n*Request:* \ncan we move james roberts either to the bottom of the pm scorecard, or completely off? not sure if we want to remove him completely from the scorecard ??\n*Impact:*\nNice-to-have\n*Priority:*\nLow", s: "complete", l: "LEAD", d: "1779208953000", c: "1779298317662" },
+  { i: "86e1ewjge", n: "I need an interior copy of Bart on the exterior Bart for Matt Von Wellsheim", s: "complete", l: "PROD", d: "1779140970000", c: "1779226160229" },
+  { i: "86e1eurhm", n: "Need PM sheet or copy of for interior thanks", s: "complete", l: "PROD", d: "1779135268000", c: "1779226153245" },
+  { i: "86e1emejz", n: "Cannot use Salesforce on my iPad", s: "complete", l: "SALES", d: "1779118422000", c: "1779828608213" },
+  { i: "86e1ekn6n", n: 'Lindsay Luchette has been added to the roster in 2026 Estimator scorecard, however her stats are not pulling and "ref" is listed in many fields.', s: "complete", l: "SALES", d: "1779116309000", c: "1779117680399" },
+  { i: "86e1ekm2h", n: "Ticket #2 for this issue: Cannot create PandaDoc proposals from salesforce, all info must be manually entered and the proposal is not linked to sales force.", s: "recieved", l: "SALES", d: "1779116214000", c: null },
+  { i: "86e1ekfhk", n: "No measurements on Blane Stone EXT BART", s: "complete", l: "PROD", d: "1779115884000", c: "1779306544581" },
+  { i: "86e1dnwj9", n: "Small Job type in SF isn't pulling all the information to the cal event", s: "recieved", l: "PROD", d: "1778879313000", c: null },
+  { i: "86e1d6y12", n: "Nick Lytle's Salesforce is bugged or not working ? When I try to set a IW I get an error message. His name also isn't on the SF, the IW saves in SF but doesn't send to the calendar.", s: "recieved", l: "PROD", d: "1778846231000", c: null },
+  { i: "86e1ccyup", n: "Half the woodwork jobs are missing the ww error form", s: "complete", l: "PROD", d: "1778705188000", c: "1779074149437" },
+  { i: "86e1bm7rb", n: "apptoto reminders for PW also not working now", s: "complete", l: "CAM", d: "1778614249000", c: "1779070079426" },
+  { i: "86e1b60fu", n: "BART for Elizabeth Franklin", s: "complete", l: "PROD", d: "1778550360000", c: "1779087178006" },
+  { i: "86e1b25mg", n: "crf not coming through", s: "complete", l: "CAM", d: "1778533496000", c: "1779073141963" },
+  { i: "86e1b0hjn", n: "Salesforce link in IWT and FWT does not hyperlink the full link. /view is cut off. And it cannot open.", s: "complete", l: "PROD", d: "1778529557000", c: "1779073127308" },
+  { i: "86e1ayyvt", n: "modify the crew email to only be sent when the checkbox PAID is clicked.", s: "complete", l: "PROD", d: "1778526117000", c: "1779073121309" },
+  { i: "86e1avchz", n: "J-14330 Jermey Blubaugh his BART isn't the correct one anymore. His wood work is showing someone else address and information", s: "complete", l: "PROD", d: "1778518349000", c: "1779087536472" },
+  { i: "86e1a2qeh", n: "WW error form for carpenters not populating in calendar event", s: "complete", l: "PROD", d: "1778279539000", c: "1779074225697" },
+  { i: "86e19yb85", n: "Pergoal light prep and heavy prep is currently equaling the same total. We should adjust the prep charge on heavy prep to be more. Let's figure it out soon.", s: "complete", l: "SALES", d: "1778266622000", c: "1779086577836" },
+  { i: "86e19g7hd", n: "WW and FIXED windows in copy of bart do not split apart.", s: "complete", l: "PROD", d: "1779147954000", c: "1780456825373" },
+  { i: "86e19g701", n: "copy of bart summary fields for elevation siding and trim measurements is off by one cell. i tagged you in theresa lopez bart", s: "complete", l: "PROD", d: "1779147797000", c: "1780456822135" },
+  { i: "86e19bydq", n: "Hardi trim not populating prices at all", s: "complete", l: "SALES", d: "1778183969000", c: "1779085503222" },
+  { i: "86e18u28r", n: "TICKET SUBMITTED BY @treven\n\n*Request Type:*\nSupport\n*Request:* \nMultiple pins on same home coming from sales force. We should only have the last stage reporting like client instead of 3 like estimate, closed won, client. \n*Impact:*\nMinor inconvenience\n*Priority:*\nMedium", s: "recieved", l: "SDR", d: "1778099711000", c: null },
+];
+
+export const CLICKUP_IT_TICKETS: ClickUpTask[] = expand(CAPTURED);
+
+/** Where this capture came from, shown on the Settings → Data screen. */
+export const CLICKUP_CAPTURE_META = {
+  workspaceId: "9017052896",
+  space: "Kind Home Development",
+  folder: "IT Tickets",
+  capturedAt: "2026-08-25T00:00:00.000Z",
+  taskCount: CAPTURED.length,
+} as const;
