@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/primitives";
 import { BrandMark } from "./brand-mark";
+import { signOutAction } from "@/lib/auth/actions";
 import { NAV_GROUPS } from "./nav-config";
 
 export function AppSidebar() {
@@ -171,11 +172,14 @@ export function AppSidebar() {
                 Settings
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              <LogOut />
-              Sign out
-              <span className="ml-auto text-[10px] text-fg-subtle">SSO later</span>
-            </DropdownMenuItem>
+            <form action={signOutAction}>
+              <DropdownMenuItem asChild>
+                <button type="submit" className="w-full cursor-pointer">
+                  <LogOut />
+                  Sign out
+                </button>
+              </DropdownMenuItem>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

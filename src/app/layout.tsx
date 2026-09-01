@@ -3,6 +3,7 @@ import { DM_Sans, Fraunces } from "next/font/google";
 import type { ReactNode } from "react";
 import { AppProviders } from "@/components/app/app-providers";
 import { getWorkspaceSnapshot } from "@/lib/data";
+import { getViewer } from "@/lib/auth/viewer";
 import "./globals.css";
 
 /**
@@ -41,18 +42,30 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // The whole working set is read once, on the server, through the data layer.
   // No component below this point imports a mock array. Both the Command
   // Center and the Employee Portal render from this one snapshot.
-  const snapshot = await getWorkspaceSnapshot();
+  //
+  // It is read *only* for a signed-in viewer. `AppProviders` is a client
+  // component and the snapshot is its prop, so it is serialised into the
+  // payload the browser receives — loading it before knowing who is asking
+  // would hand the entire department to anyone who opened /login.
+  const viewer = await getViewer();
+  const snapshot = viewer ? await getWorkspaceSnapshot() : null;
 
   return (
     <html lang="en" className={`${dmSans.variable} ${fraunces.variable}`}>
       <body className="antialiased">
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-navy-600 focus:px-3 focus:py-2 focus:text-xs focus:text-white"
-        >
-          Skip to content
-        </a>
-        <AppProviders snapshot={snapshot}>{children}</AppProviders>
+        {snapshot ? (
+          <>
+            <a
+              href="#main"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-navy-600 focus:px-3 focus:py-2 focus:text-xs focus:text-white"
+            >
+              Skip to content
+            </a>
+            <AppProviders snapshot={snapshot}>{children}</AppProviders>
+          </>
+        ) : (
+          children
+        )}
       </body>
     </html>
   );
