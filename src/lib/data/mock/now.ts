@@ -18,10 +18,10 @@
  */
 /**
  * Must sit after the newest captured record. The most recent capture is the
- * "Bart for Tory Woods" ticket at 13:35 Pacific on 27 August; anchoring before
- * it made tickets claim to have been raised in the future.
+ * "Rick Price 3.3 Bart crew price" ticket at 07:56 Pacific on 1 September;
+ * anchoring before it made tickets claim to have been raised in the future.
  */
-export const DATASET_NOW = new Date("2026-08-28T22:00:00.000Z");
+export const DATASET_NOW = new Date("2026-09-01T22:00:00.000Z");
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

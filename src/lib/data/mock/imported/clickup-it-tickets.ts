@@ -4,7 +4,7 @@ import type { ClickUpTask } from "@/lib/data/import/clickup";
  * A capture of the real IT Tickets folder in ClickUp.
  *
  *   Workspace 9017052896 → Kind Home Development → IT Tickets
- *   Captured 28 August 2026 · 205 tickets spanning 2 May – 27 August 2026
+ *   Captured 1 September 2026 · 212 tickets spanning 2 May – 1 September 2026
  *
  * Stored in a compact shape because the full ClickUp payload repeats the same
  * assignee and a derivable URL on every row. `expand()` restores the shape the
@@ -59,7 +59,15 @@ function expand(rows: Captured[]): ClickUpTask[] {
 }
 
 const CAPTURED: Captured[] = [
+  // ---- September 2026 ------------------------------------------------------
+  { i: "86e3295zf", n: "Rick Price 3.3 Bart crew price \u201c#N/A\u201d", s: "recieved", l: "PROD", d: "1788274600000", c: null },
   // ---- August 2026 ---------------------------------------------------------
+  { i: "86e31xp6d", n: "Rebecca McMillan bart - crew sheet error", s: "recieved", l: "PROD", d: "1788214323000", c: null },
+  { i: "86e31pnjk", n: "Realene (ray-lean) Olson 3.3", s: "recieved", l: "PROD", d: "1788198372000", c: null },
+  { i: "86e31mg7p", n: "Devin brown", s: "recieved", l: "PROD", d: "1788193288000", c: null },
+  { i: "86e31kpup", n: "TICKET SUBMITTED BY @corey\n\n*Request Type:*\nOutage\n*Request:* \nNew Warranty form on KHP 3.0 is not pushing First Name, Last Name, Address, \"What did we paint?\", \"What are you seeing?\"  FIELDS to email notification.\n*Impact:*\nCannot work at all\n*Priority:*\nHigh", s: "recieved", l: "LEAD", d: "1788191665000", c: null },
+  { i: "86e31kfcy", n: "Angi leads randomly coming through API as Angi Quote Request which doesn't exist as a lead source option in SF. Please connect with the Angi rep that helped set this up.", s: "recieved", l: "CAM", d: "1788190957000", c: null },
+  { i: "86e311ju6", n: "Can we please add SCHEME CHANGE?: to the Scheduling Notes for CAM", s: "recieved", l: "CAM", d: "1787955831000", c: null },
   { i: "86e30gee8", n: "Bart for Tory Woods", s: "recieved", l: "PROD", d: "1787862920000", c: null },
   { i: "86e30gc5n", n: "need copy of BART for Bonnie Lund look for the one that says use", s: "recieved", l: "PROD", d: "1787862642000", c: null },
   { i: "86e308bfk", n: "TICKET SUBMITTED BY @jonathan.keller\n\n*Request Type:*\nOutage\n*Request:* \nRobby, I'm reviewing the PM scorecard right now, and the formulas for paint profit seem to be wrong. Wanted to confirm with you because you understand it better. \nThe Service Fee amounts should be removed from Final Paint Price AND Gross Profit Dollars before determining GP%. It seems like it's only removing it from GPD, which is artificially decreasing profit %, which is what we needed to avoid.\n*Impact:*\nCannot work at all, Major slowdown\n*Priority:*\nHigh", s: "recieved", l: "LEAD", d: "1787843033000", c: null },

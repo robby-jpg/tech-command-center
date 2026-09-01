@@ -8,7 +8,7 @@ import type { SlackIntakeMessage } from "@/lib/data/import/slack";
  *   #it-ticketing-sales       C08RA0R32S3   form: SUBMIT A TICKET EST
  *   #it-ticketing-sdr         C08RJ277LJJ   form: SUBMIT A TICKET SDR
  *
- *   Captured 28 August 2026 · 57 requests
+ *   Captured 1 September 2026 · 63 requests
  *
  * This is the canonical side. Every request carries the submitter as a real
  * Slack mention, the request type, the impact and the stated priority — all of
@@ -43,6 +43,8 @@ const PACIFIC_OFFSET = "-07:00";
 
 const CAPTURED: Captured[] = [
   /* -- #it-ticketing-cams --------------------------------------------------- */
+  { ch: "cams", at: "2026-08-31 08:42:37", by: "UMFCCGKN0", t: "Support", im: "Major slowdown", p: "High", replies: 1, r: "Angi leads randomly coming through API as Angi Quote Request which doesn't exist as a lead source option in SF. Please connect with the Angi rep that helped set this up." },
+  { ch: "cams", at: "2026-08-28 15:23:51", by: "U03HBGFSCU8", t: "Request", im: "Nice-to-have, Major slowdown", p: "High", replies: 1, r: "Can we please add SCHEME CHANGE?: to the Scheduling Notes for CAM\n\nSOFT SCHEDULED?\nGETTING OTHER BIDS?\nDISCUSSED TIMELINE:\nSCOPE:\nSCHEME CHANGE?\nBEST TIME TO CONTACT:\nCONTACT METHOD:\nPERSONALITY NOTES:\nGREENSKY Y/N:\nif YES, GREENSKY APP NAME:\nADDITIONAL NOTES:" },
   { ch: "cams", at: "2026-08-25 09:41:30", by: "U04LVDK3A4Q", t: "Outage", im: "Cannot work at all, Major slowdown", p: "High", replies: 1, r: "ive had two ifc issues in the last day. one ifc for christina Zaidi didnt come through at all from spotio. chloe did note aaron did it right and she was with him, so it wasnt that. then rennee bishop didnt convert through. not the same issues as with the other ones, so unclear why it didnt" },
   { ch: "cams", at: "2026-08-24 14:22:17", by: "U04LVDK3A4Q", t: "Support", im: "Cannot work at all", p: "Medium", replies: 1, r: "mikel said to do this now" },
   { ch: "cams", at: "2026-08-24 10:44:40", by: "U04LVDK3A4Q", t: "Outage", im: "Major slowdown", p: "High", replies: 1, r: "RR for the CSC team is pulling from the wrong month. it is pulling from the month they move it to, not the month they moved it from." },
@@ -63,6 +65,10 @@ const CAPTURED: Captured[] = [
   { ch: "cams", at: "2026-07-20 11:24:33", by: "U04LVDK3A4Q", t: "Request", im: "Major slowdown", p: "High", r: "hey robby, when we auto convert ifcs, can it recognize dupes so that it doesnt create a separate account/contact? if it still needs to create it but it recognizes the dupe, can it label it as like \"Bob Smith 2\"? Also i know we talked about this but is there a way to fix the way those addresses come in?" },
 
   /* -- #it-ticketing-production --------------------------------------------- */
+  { ch: "production", at: "2026-09-01 07:56:40", by: "U0B059NHQAE", t: "Request", im: "Cannot work at all, Major slowdown", p: "High", replies: 2, r: "Rick Price 3.3 Bart crew price \u201c#N/A\u201d" },
+  { ch: "production", at: "2026-08-31 15:12:03", by: "U08HUG1TBPH", t: "Support", im: "Major slowdown", p: "Medium", replies: 2, r: "Rebecca McMillan bart - crew sheet error" },
+  { ch: "production", at: "2026-08-31 10:46:12", by: "U0AQCC1RYRG", t: "Support, Request", im: "Nice-to-have", p: "High", replies: 3, r: "Realene (ray-lean) Olson 3.3" },
+  { ch: "production", at: "2026-08-31 09:21:28", by: "U08HUG1TBPH", t: "Support", im: "Cannot work at all", p: "High", replies: 2, r: "Devin brown" },
   { ch: "production", at: "2026-08-27 13:35:20", by: "U05BM5YMR26", t: "Outage", im: "Major slowdown", p: "High", replies: 7, r: "Bart for Tory Woods" },
   { ch: "production", at: "2026-08-27 13:30:42", by: "U05BM5YMR26", t: "Outage", im: "Major slowdown", p: "High", replies: 7, r: "need copy of BART for Bonnie Lund look for the one that says use" },
   { ch: "production", at: "2026-08-26 07:10:19", by: "U0B059NHQAE", t: "Request", im: "Cannot work at all", p: "High", replies: 3, r: "3.3 Bart Mike Beckett" },
@@ -143,6 +149,6 @@ export const SLACK_INTAKE: SlackIntakeMessage[] = CAPTURED.map((row) => {
 export const SLACK_CAPTURE_META = {
   workspace: "kindhomesolutions.slack.com",
   channels: Object.values(CHANNELS).map((c) => c.name),
-  capturedAt: "2026-08-28T00:00:00.000Z",
+  capturedAt: "2026-09-01T22:00:00.000Z",
   messageCount: CAPTURED.length,
 } as const;
