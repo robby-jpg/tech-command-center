@@ -12,8 +12,21 @@ import type { NextAuthConfig } from "next-auth";
  * deploy of new code.
  */
 export const ALLOWED_DOMAIN = (
-  process.env.AUTH_ALLOWED_DOMAIN?.trim() || "kindhomesolutions.com"
+  process.env.ALLOWED_EMAIL_DOMAIN?.trim() ||
+  process.env.AUTH_ALLOWED_DOMAIN?.trim() ||
+  "kindhomesolutions.com"
 ).toLowerCase();
+
+/**
+ * The registered redirect URI, stated rather than inferred.
+ *
+ * Kind Home's other tools require this for the reason the SDR Portal's
+ * DEPLOYING.md gives: guessing the callback from request headers means
+ * trusting a value the caller can forge. It doubles as the signal that lets
+ * Auth.js trust the incoming Host — without it, `trustHost` is false whenever
+ * NODE_ENV is "production", so sign-in works locally and fails on Sevalla.
+ */
+export const OAUTH_CALLBACK_URL = process.env.OAUTH_CALLBACK_URL?.trim() || null;
 
 /**
  * The domain check, done properly.
@@ -54,8 +67,18 @@ export function isAllowedProfile(profile: unknown): boolean {
  * request in `proxy.ts`.
  */
 export const authConfig = {
+  // Mounted at /auth rather than Auth.js's default /api/auth so the callback
+  // path matches the other Kind Home tools as closely as the library allows.
+  basePath: "/auth",
+  trustHost: Boolean(
+    OAUTH_CALLBACK_URL ?? process.env.AUTH_URL ?? process.env.AUTH_TRUST_HOST,
+  ),
   providers: [
     Google({
+      // House variable names first; the Auth.js defaults stay as a fallback.
+      clientId: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID,
+      clientSecret:
+        process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET,
       authorization: {
         params: {
           // A hint to Google's account chooser, not a guarantee — see above.

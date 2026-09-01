@@ -41,6 +41,6 @@ export const config = {
    * styled login page rather than a redirect loop over its CSS.
    */
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
+    "/((?!auth/|healthz|_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
   ],
 };
