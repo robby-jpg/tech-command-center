@@ -6,6 +6,7 @@ import {
   readProjectDepartments,
 } from "../project-departments";
 import type { DataSource, TicketQuery } from "./types";
+import { getViewer, resolveViewerUser } from "../auth/viewer";
 
 export type * from "./types";
 
@@ -58,11 +59,36 @@ export function getDataSource(): DataSource {
  * is populated for real. See `lib/project-departments.ts`.
  */
 export const getWorkspaceSnapshot = async () => {
+  // The second line of defence. `proxy.ts` redirects anonymous requests before
+  // they reach a route, but the guarantee that matters is this one: the working
+  // set cannot be assembled without a session, so a route that ever slips past
+  // the proxy's matcher renders nothing rather than the whole department.
+  const viewer = await getViewer();
+  if (!viewer) {
+    throw new Error(
+      "getWorkspaceSnapshot() requires a signed-in viewer. Callers reachable " +
+        "before sign-in must check getViewer() first.",
+    );
+  }
+
   const [snapshot, overrides] = await Promise.all([
     getDataSource().getSnapshot(),
     readProjectDepartments(),
   ]);
-  return applyProjectDepartments(snapshot, overrides);
+  const resolved = applyProjectDepartments(snapshot, overrides);
+
+  // Who "I" am is a fact about the request now, not about the fixture. A
+  // colleague who is not yet in the directory is appended rather than dropped,
+  // so the chrome can render them; `isTechTeam: false` keeps them out of the
+  // pickers that assign work.
+  const me = resolveViewerUser(resolved.users, viewer);
+  const known = resolved.users.some((u) => u.id === me.id);
+
+  return {
+    ...resolved,
+    users: known ? resolved.users : [...resolved.users, me],
+    currentUserId: me.id,
+  };
 };
 export const getTickets = (query?: TicketQuery) => getDataSource().getTickets(query);
 export const getTicket = (id: string) => getDataSource().getTicket(id);
@@ -106,7 +132,10 @@ export const searchEverything = (query: string, limit?: number) =>
  */
 export const getDashboardData = () => getWorkspaceSnapshot();
 
-/** The signed-in user. V1 has no authentication; see docs in mock/users.ts. */
+/**
+ * The signed-in user, resolved from the Google session and matched against the
+ * staff directory by email. Throws when nobody is signed in.
+ */
 export async function getCurrentUser() {
   const snap = await getWorkspaceSnapshot();
   const user = snap.users.find((u) => u.id === snap.currentUserId);
