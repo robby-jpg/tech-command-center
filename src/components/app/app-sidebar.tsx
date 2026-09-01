@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
-import { ChevronsUpDown, LogOut, RotateCcw, UserCog } from "lucide-react";
+import { ArrowUpRight, ChevronsUpDown, LogOut, RotateCcw, UserCog } from "lucide-react";
 import { DEPARTMENTS, PROJECT_STATUS_META } from "@/domain";
 import { useWorkspace } from "@/lib/store/workspace-store";
 import { needsAttention, openTickets } from "@/lib/selectors";
@@ -96,6 +96,12 @@ export function AppSidebar() {
                         )}
                       />
                       <span className="flex-1 truncate">{item.label}</span>
+                      {item.external && (
+                        <ArrowUpRight
+                          className="size-3 shrink-0 text-fg-subtle"
+                          aria-label="Opens outside the Command Center"
+                        />
+                      )}
                       {count > 0 && (
                         <span
                           className={cn(

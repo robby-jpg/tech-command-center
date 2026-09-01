@@ -166,22 +166,42 @@ export const TICKET_SOURCE_ORDER = [
 export const ticketSourceSchema = z.enum(TICKET_SOURCE_ORDER);
 export type TicketSource = z.infer<typeof ticketSourceSchema>;
 
+/**
+ * Whether a source can actually put a ticket into the queue today.
+ *
+ * `preview` is its own state rather than a shade of `live`: the Employee
+ * Portal is real and reachable, but it is reachable from inside this
+ * application rather than from the department's own, so a submission through it
+ * is a rehearsal. Calling that "Live" on the settings page would misreport the
+ * rollout to the person reading it.
+ */
+export type SourceStatus = "live" | "preview" | "planned";
+
+export const SOURCE_STATUS_META: Record<
+  SourceStatus,
+  { label: string; tone: Tone }
+> = {
+  live: { label: "Live", tone: "success" },
+  preview: { label: "Preview", tone: "accent" },
+  planned: { label: "Planned", tone: "neutral" },
+};
+
 export const TICKET_SOURCE_META: Record<
   TicketSource,
-  { label: string; available: boolean }
+  { label: string; status: SourceStatus }
 > = {
-  command_center: { label: "Tech Command Center", available: true },
-  sales_portal: { label: "Sales Portal", available: false },
+  command_center: { label: "Tech Command Center", status: "live" },
+  sales_portal: { label: "Sales Portal", status: "preview" },
   project_consultant_portal: {
     label: "Project Consultant Portal",
-    available: false,
+    status: "preview",
   },
-  production_portal: { label: "Production Portal", available: false },
-  slack: { label: "Slack", available: false },
-  email: { label: "Email", available: false },
-  api: { label: "API", available: false },
-  automation: { label: "Automation", available: false },
-  other: { label: "Other", available: true },
+  production_portal: { label: "Production Portal", status: "preview" },
+  slack: { label: "Slack", status: "planned" },
+  email: { label: "Email", status: "planned" },
+  api: { label: "API", status: "planned" },
+  automation: { label: "Automation", status: "planned" },
+  other: { label: "Other", status: "live" },
 };
 
 /* -------------------------------------------------------------------------- */

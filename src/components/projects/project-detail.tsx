@@ -49,6 +49,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/primitives";
 import { DetailRow } from "@/components/shared/page";
+import { DepartmentPicker } from "./department-picker";
 import { EmptyState } from "@/components/shared/states";
 import {
   AvatarStack,
@@ -404,11 +405,7 @@ function OverviewTab({ workspace }: { workspace: Workspace }) {
               <DetailRow label="Automations created">
                 {project.automationsCreated || "—"}
               </DetailRow>
-              <DetailRow label="Departments affected">
-                {project.departmentsImpacted.length > 0
-                  ? project.departmentsImpacted.join(", ")
-                  : "—"}
-              </DetailRow>
+              <DepartmentPicker project={project} />
             </div>
             <p className="py-2 text-[10px] leading-4 text-fg-subtle">
               Estimates only count towards department totals once a project ships.

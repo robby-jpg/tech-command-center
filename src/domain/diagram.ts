@@ -10,6 +10,7 @@ export const DIAGRAM_TYPE_ORDER = [
   "workflow",
   "troubleshooting",
   "data_flow",
+  "whiteboard",
 ] as const;
 
 export const diagramTypeSchema = z.enum(DIAGRAM_TYPE_ORDER);
@@ -43,7 +44,27 @@ export const DIAGRAM_TYPE_META: Record<
     description: "Where a piece of data originates and where it ends up.",
     icon: "ArrowRightLeft",
   },
+  /**
+   * A whiteboard is a diagram with the rigour turned off.
+   *
+   * It shares the type, the editor and the persistence of every other diagram
+   * — the only differences are that it is surfaced under Brainstorming rather
+   * than Infrastructure, and that it leans on the `sticky` node kind. Making
+   * it a separate entity would have meant a second canvas, a second store and
+   * a second export path for no gain.
+   */
+  whiteboard: {
+    label: "Whiteboard",
+    tone: "warning",
+    description: "Thinking out loud. No conventions, nothing has to be correct yet.",
+    icon: "StickyNote",
+  },
 };
+
+/** Whiteboards are diagrams; these are the ones that are not. */
+export const FORMAL_DIAGRAM_TYPES = DIAGRAM_TYPE_ORDER.filter(
+  (t) => t !== "whiteboard",
+) as readonly DiagramType[];
 
 /* -------------------------------------------------------------------------- */
 /* Nodes                                                                      */
@@ -57,6 +78,7 @@ export const DIAGRAM_NODE_KIND_ORDER = [
   "database",
   "person",
   "note",
+  "sticky",
   "end",
 ] as const;
 
@@ -65,7 +87,12 @@ export type DiagramNodeKind = z.infer<typeof diagramNodeKindSchema>;
 
 export const DIAGRAM_NODE_KIND_META: Record<
   DiagramNodeKind,
-  { label: string; tone: Tone; icon: string; shape: "rounded" | "diamond" | "pill" | "note" }
+  {
+    label: string;
+    tone: Tone;
+    icon: string;
+    shape: "rounded" | "diamond" | "pill" | "note" | "sticky";
+  }
 > = {
   start: { label: "Start", tone: "success", icon: "Play", shape: "pill" },
   process: { label: "Process", tone: "info", icon: "Square", shape: "rounded" },
@@ -79,6 +106,11 @@ export const DIAGRAM_NODE_KIND_META: Record<
   database: { label: "Database", tone: "accent", icon: "Database", shape: "rounded" },
   person: { label: "Person / Team", tone: "neutral", icon: "Users", shape: "rounded" },
   note: { label: "Note", tone: "neutral", icon: "StickyNote", shape: "note" },
+  /**
+   * The whiteboard primitive. Bigger than a note, holds a sentence, and reads
+   * as something written in the moment rather than documented afterwards.
+   */
+  sticky: { label: "Sticky", tone: "warning", icon: "StickyNote", shape: "sticky" },
   end: { label: "End", tone: "neutral", icon: "CircleStop", shape: "pill" },
 };
 

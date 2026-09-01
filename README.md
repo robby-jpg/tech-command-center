@@ -29,6 +29,7 @@ This application is the beginning of collapsing that into one.
 
 - [Running it](#running-it)
 - [What is in it](#what-is-in-it)
+- [The Employee Portal](#the-employee-portal)
 - [Architecture](#architecture)
 - [The data layer](#the-data-layer)
 - [Mock data strategy](#mock-data-strategy)
@@ -79,9 +80,93 @@ Requires Node 20 or newer.
 | **Analytics** | Support performance, delivery performance, and business impact — deeper than the overview, not a repeat of it. |
 | **Activity** | The department-wide audit stream, filterable by type, person and significance. |
 | **Settings** | Ticket configuration, SLA rules, project configuration, systems, team, integrations and the local dataset. |
+| **Employee Portal** | What the rest of the company sees of its own requests. Its own shell, its own vocabulary, no Command Center chrome. See below. |
 
 Global search (`Cmd/Ctrl + K`) covers tickets, projects, systems, documentation
 and diagrams. `C` opens quick-create; `/` opens search.
+
+---
+
+## The Employee Portal
+
+`/portal` is what somebody outside the Tech Department sees of their own
+requests. It reads the same tickets the Command Center does and shows a
+different thing entirely.
+
+It exists inside this application so it can be looked at and argued with now.
+It is built to be lifted out of it later, into the Sales, Project Consultant and
+Production portals.
+
+### Why it is not just a filtered ticket list
+
+- **Four stages, not seven.** The department needs `new`, `triaged`,
+  `in_progress`, `waiting_on_requester`, `blocked`, `testing` and `resolved` to
+  run a queue. A requester needs to know one of four things: you have it, you
+  are on it, you need me, it is done. `requesterStage()` collapses one onto the
+  other. `blocked` deliberately reads as "Being worked on" — it means the
+  department is chasing a vendor, not that the requester should do something.
+- **The redaction is a projection, not a filter on the way out.** `PortalTicket`
+  does not carry priority, SLA, effort, tags, watchers or external references,
+  so no component can render them by accident. Internal notes and
+  non-allow-listed activity never leave `lib/portal.ts`.
+- **Priority is not asked for.** The form asks who is affected and how soon it
+  matters; `derivePriority()` turns those two answers into a starting priority
+  the department then retriages. A field marked Critical by the person who is
+  annoyed is not a triage decision.
+
+### What travels, and what does not
+
+| Piece | Moves with the portal |
+| --- | --- |
+| `src/domain/portal.ts` | Yes — stages, redaction, source mapping |
+| `src/lib/portal.ts` | Yes — every read, viewer passed explicitly |
+| `src/components/portal/` | Yes |
+| `src/app/(portal)/` | Yes |
+| The preview bar in `portal-shell.tsx` | **No** — delete it |
+| `?as=` and the switcher in `portal-context.tsx` | **No** — replaced by the host application's session |
+
+`PortalViewerProvider` is the only place the portal decides who it is talking
+to. Nothing below it reads `snapshot.currentUserId`, because in a department's
+own portal that value is meaningless.
+
+A submission carries the source of the portal it would have come from —
+`PORTAL_SOURCE_BY_DEPARTMENT` — so moving the page changes which source a
+ticket records and nothing else. The queue is the same queue.
+
+### Two scopes
+
+**My requests** is what a portal normally shows. **My department** exists
+because of the data: 127 of the 207 imported tickets have no requester at all,
+since ClickUp's copy of the intake form threw the name away. Those requests are
+real and somebody's, and a `mine`-only portal would bury them forever.
+
+`requesterDepartment` is also not what its name suggests — it is the ClickUp
+list a request landed in, which often is not the team the person is on. Lindsay
+Jo is Production and four of her five open requests are filed under Leadership.
+The department scope therefore matches on **either** the ticket's list **or**
+the requester's own department, and `canViewRequest` is exactly the union of the
+two scopes, so anything listed can be opened and nothing else can be reached by
+guessing at a URL.
+
+Both of these stop being problems once intake comes through here: a submission
+from the portal carries its submitter.
+
+### Known gaps
+
+- **No authentication.** The viewer comes from `?as=`. That is a preview
+  mechanism, not a security model. The department check is enforced regardless,
+  but it runs client-side because there is no server yet — it becomes the
+  `where` clause when the data layer moves behind Postgres.
+- **"Waiting on you" never fires on current data.** The imported tickets only
+  carry `new`, `triaged` and `resolved`, so nothing is ever in
+  `waiting_on_requester`. The portal's most valuable section is dark until the
+  department starts using that status.
+- **Department visibility is company-wide within a department.** Everyone on a
+  team can see every request from that team, including the reply box. There is
+  no role model to gate it on, and whether that is right is a decision rather
+  than an oversight.
+- **No notifications.** A request that starts waiting on somebody waits silently
+  until they open the portal.
 
 ---
 
@@ -311,10 +396,15 @@ the server environment.
 | `/analytics` | Support, delivery and business impact |
 | `/activity` | Audit stream |
 | `/settings` | Configuration |
+| `/portal` | Employee Portal — a requester's own requests |
+| `/portal/requests/[id]` | One request, requester-facing |
 
 `/tickets` accepts `status`, `priority`, `category`, `system` and `assignee` as
 comma-separated query parameters, which is how the Command Center KPIs link
 through with a filter already applied.
+
+`/portal` accepts `as=<userId>`, which is who the portal is being previewed as.
+That parameter is scaffolding and disappears with the preview bar; see below.
 
 ---
 
@@ -375,7 +465,7 @@ access path, so a page never learns where a record physically lives.
 | **Salesforce** | User directory and automation status, read-only to begin with. |
 | **Google Workspace** | Identity, and the directory behind onboarding and offboarding. |
 | **ClickUp** | One-time historical import. Not an ongoing sync. |
-| **Department portals** | Sales, Project Consultant and Production submitting into the same queue, distinguished by `source`. |
+| **Department portals** | Hosting the Employee Portal inside Sales, Project Consultant and Production rather than here. The page exists; what is left is identity and a home for it. |
 
 ---
 
@@ -404,11 +494,16 @@ In order:
    system health directly, and both currently rely on somebody noticing.
 4. **Slack intake, then the ClickUp import.** Together these retire the
    duplication the department is living with today.
-5. **Department portals.** Ticket creation already carries a `source`, so a
-   portal is a new writer against an existing model rather than a new system.
+5. **Move the Employee Portal into the department portals.** The page is built
+   and reachable at `/portal`; what is left is deleting the preview bar and
+   pointing `PortalViewerProvider` at the host application's own session.
+   Depends on step 2 — the portal is the surface where identity actually
+   matters, since it decides what somebody outside the department can see.
 
-Deliberately deferred: mobile, role-based permissions, notification and email
-infrastructure, and anything customer-facing.
+Deliberately deferred: role-based permissions, notification and email
+infrastructure, and anything customer-facing. Mobile is no longer deferred for
+the Employee Portal — the people raising requests are largely on phones — though
+the Command Center itself remains desk-only.
 
 ---
 

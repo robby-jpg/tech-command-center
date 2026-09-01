@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 import type { ReactNode } from "react";
-import { AppChrome } from "@/components/app/app-chrome";
+import { AppProviders } from "@/components/app/app-providers";
 import { getWorkspaceSnapshot } from "@/lib/data";
 import "./globals.css";
 
@@ -39,7 +39,8 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // The whole working set is read once, on the server, through the data layer.
-  // No component below this point imports a mock array.
+  // No component below this point imports a mock array. Both the Command
+  // Center and the Employee Portal render from this one snapshot.
   const snapshot = await getWorkspaceSnapshot();
 
   return (
@@ -51,7 +52,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         >
           Skip to content
         </a>
-        <AppChrome snapshot={snapshot}>{children}</AppChrome>
+        <AppProviders snapshot={snapshot}>{children}</AppProviders>
       </body>
     </html>
   );

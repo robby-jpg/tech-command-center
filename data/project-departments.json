@@ -1,0 +1,32 @@
+{
+  "p-bart-exterior": [
+    "est",
+    "production"
+  ],
+  "p-cabinet-scheduling": [
+    "pm"
+  ],
+  "p-fabric-elt": [
+    "leadership"
+  ],
+  "p-job-costing": [
+    "est",
+    "pm"
+  ],
+  "p-jotform-companycam": [
+    "pm"
+  ],
+  "p-leads-accounts-contacts": [
+    "sales",
+    "sdr"
+  ],
+  "p-scorecards": [
+    "cam",
+    "est",
+    "pm",
+    "sdr"
+  ],
+  "p-spotio-launch": [
+    "sdr"
+  ]
+}

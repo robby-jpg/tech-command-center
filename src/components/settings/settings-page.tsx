@@ -26,6 +26,7 @@ import {
   TICKET_CATEGORY_ORDER,
   TICKET_PRIORITY_META,
   TICKET_PRIORITY_ORDER,
+  SOURCE_STATUS_META,
   TICKET_SOURCE_META,
   TICKET_SOURCE_ORDER,
   TICKET_STATUS_META,
@@ -201,14 +202,10 @@ function TicketConfiguration() {
             return (
               <li key={source} className="flex items-center gap-3 px-4 py-2.5">
                 <span className="text-xs text-fg">{meta.label}</span>
-                {meta.available ? (
-                  <Badge tone="success">
-                    <Check className="size-2.5" />
-                    Live
-                  </Badge>
-                ) : (
-                  <Badge tone="neutral">Planned</Badge>
-                )}
+                <Badge tone={SOURCE_STATUS_META[meta.status].tone}>
+                  {meta.status === "live" && <Check className="size-2.5" />}
+                  {SOURCE_STATUS_META[meta.status].label}
+                </Badge>
                 <span className="tabular ml-auto text-2xs text-fg-subtle">
                   {count > 0 ? `${count} tickets` : "—"}
                 </span>

@@ -1,6 +1,10 @@
 import "server-only";
 
 import { MockDataSource } from "./mock-source";
+import {
+  applyProjectDepartments,
+  readProjectDepartments,
+} from "../project-departments";
 import type { DataSource, TicketQuery } from "./types";
 
 export type * from "./types";
@@ -44,11 +48,44 @@ export function getDataSource(): DataSource {
 /* Service functions                                                          */
 /* -------------------------------------------------------------------------- */
 
-export const getWorkspaceSnapshot = () => getDataSource().getSnapshot();
+/**
+ * The whole working set, with hand-authored overrides applied.
+ *
+ * `departmentsImpacted` is empty on every imported project, so the override
+ * file in `data/` is merged on the way out. It sits here rather than inside the
+ * mock provider because it is a fact about the business, not about the fixture
+ * — a Postgres provider would want exactly the same treatment until the column
+ * is populated for real. See `lib/project-departments.ts`.
+ */
+export const getWorkspaceSnapshot = async () => {
+  const [snapshot, overrides] = await Promise.all([
+    getDataSource().getSnapshot(),
+    readProjectDepartments(),
+  ]);
+  return applyProjectDepartments(snapshot, overrides);
+};
 export const getTickets = (query?: TicketQuery) => getDataSource().getTickets(query);
 export const getTicket = (id: string) => getDataSource().getTicket(id);
-export const getProjects = () => getDataSource().getProjects();
-export const getProject = (id: string) => getDataSource().getProject(id);
+export const getProjects = async () => {
+  const [projects, overrides] = await Promise.all([
+    getDataSource().getProjects(),
+    readProjectDepartments(),
+  ]);
+  return projects.map((p) =>
+    overrides[p.id] ? { ...p, departmentsImpacted: overrides[p.id] } : p,
+  );
+};
+
+export const getProject = async (id: string) => {
+  const [project, overrides] = await Promise.all([
+    getDataSource().getProject(id),
+    readProjectDepartments(),
+  ]);
+  if (!project) return null;
+  return overrides[project.id]
+    ? { ...project, departmentsImpacted: overrides[project.id] }
+    : project;
+};
 export const getSystems = () => getDataSource().getSystems();
 export const getSystem = (slugOrId: string) => getDataSource().getSystem(slugOrId);
 export const getSystemGraph = () => getDataSource().getSystemGraph();

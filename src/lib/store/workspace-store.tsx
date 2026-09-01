@@ -301,6 +301,11 @@ function createActions(mutate: Mutate) {
         const before = s.tickets.find((t) => t.id === id);
         if (!before || before.status === status) return s;
         const actor = actorId ?? s.currentUserId;
+        const reopening = before.status === "resolved" && status !== "resolved";
+
+        // A requester can move a ticket too — reopening one from the Employee
+        // Portal — and that is not the department responding to it.
+        const byTech = s.users.find((u) => u.id === actor)?.isTechTeam ?? false;
 
         const tickets = mapTicket(s, id, (t) => ({
           ...t,
@@ -309,12 +314,9 @@ function createActions(mutate: Mutate) {
           // Resolving stamps the time; reopening clears it and counts the
           // reopen, which is what the reopened-rate metric reads.
           resolvedAt: status === "resolved" ? s.now : null,
-          reopenCount:
-            t.status === "resolved" && status !== "resolved"
-              ? t.reopenCount + 1
-              : t.reopenCount,
-          // Any human touch counts as the first response.
-          firstResponseAt: t.firstResponseAt ?? s.now,
+          reopenCount: reopening ? t.reopenCount + 1 : t.reopenCount,
+          // Any touch by the department counts as the first response.
+          firstResponseAt: byTech ? (t.firstResponseAt ?? s.now) : t.firstResponseAt,
         }));
 
         return withEvent(
@@ -326,7 +328,12 @@ function createActions(mutate: Mutate) {
               {
                 id: newId("ta"),
                 ticketId: id,
-                kind: status === "resolved" ? "resolved" : "status_changed",
+                kind:
+                  status === "resolved"
+                    ? "resolved"
+                    : reopening
+                      ? "reopened"
+                      : "status_changed",
                 actorId: actor,
                 from: TICKET_STATUS_META[before.status].label,
                 to: TICKET_STATUS_META[status].label,
@@ -444,12 +451,25 @@ function createActions(mutate: Mutate) {
       }));
     },
 
-    addComment(ticketId: string, body: string, internal = false) {
+    /**
+     * `authorId` is explicit because the Employee Portal writes through here
+     * too, and over there the author is the requester rather than whoever the
+     * application thinks is signed in.
+     */
+    addComment(ticketId: string, body: string, internal = false, authorId?: string) {
       const trimmed = body.trim();
       if (!trimmed) return;
 
       mutate((s) => {
         const ticket = s.tickets.find((t) => t.id === ticketId);
+        const author = authorId ?? s.currentUserId;
+
+        // First response means the department answered. A requester replying to
+        // their own ticket is not that, and counting it would have the SLA
+        // report a response time the department never achieved.
+        const fromTech =
+          s.users.find((u) => u.id === author)?.isTechTeam ?? false;
+
         return withEvent(
           {
             ...s,
@@ -458,7 +478,7 @@ function createActions(mutate: Mutate) {
               {
                 id: newId("c"),
                 ticketId,
-                authorId: s.currentUserId,
+                authorId: author,
                 body: trimmed,
                 createdAt: s.now,
                 internal,
@@ -468,7 +488,7 @@ function createActions(mutate: Mutate) {
             tickets: mapTicket(s, ticketId, (t) => ({
               ...t,
               updatedAt: s.now,
-              firstResponseAt: t.firstResponseAt ?? s.now,
+              firstResponseAt: fromTech ? (t.firstResponseAt ?? s.now) : t.firstResponseAt,
             })),
           },
           {
@@ -476,7 +496,7 @@ function createActions(mutate: Mutate) {
             entityId: ticketId,
             entityLabel: ticket?.ticketNumber ?? ticketId,
             action: "commented",
-            actorId: s.currentUserId,
+            actorId: author,
             summary: `commented on ${ticket?.ticketNumber ?? "a ticket"}`,
             detail: trimmed.slice(0, 120),
             href: `/tickets/${ticketId}`,
@@ -808,6 +828,39 @@ function createActions(mutate: Mutate) {
         );
       });
       return id;
+    },
+
+    /**
+     * Puts a diagram back into the working set from a durable copy.
+     *
+     * Used by kept whiteboards: the overlay is dropped whenever the dataset
+     * clock moves, and this is how a board that was worth keeping comes back.
+     * Restoring over a diagram that is somehow still present replaces it rather
+     * than creating a second one with the same id.
+     */
+    restoreDiagram(diagram: Diagram) {
+      mutate((s) => {
+        const exists = s.diagrams.some((d) => d.id === diagram.id);
+        return withEvent(
+          {
+            ...s,
+            diagrams: exists
+              ? s.diagrams.map((d) => (d.id === diagram.id ? diagram : d))
+              : [diagram, ...s.diagrams],
+          },
+          {
+            entityType: "diagram",
+            entityId: diagram.id,
+            entityLabel: diagram.name,
+            action: "updated",
+            actorId: s.currentUserId,
+            summary: `restored ${diagram.name} from a kept copy`,
+            detail: null,
+            href: `/diagrams/${diagram.id}`,
+            significant: false,
+          },
+        );
+      });
     },
 
     saveDiagram(id: string, patch: Partial<Pick<Diagram, "nodes" | "edges" | "name" | "description" | "type">>) {

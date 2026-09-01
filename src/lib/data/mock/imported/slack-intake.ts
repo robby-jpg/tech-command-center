@@ -8,7 +8,7 @@ import type { SlackIntakeMessage } from "@/lib/data/import/slack";
  *   #it-ticketing-sales       C08RA0R32S3   form: SUBMIT A TICKET EST
  *   #it-ticketing-sdr         C08RJ277LJJ   form: SUBMIT A TICKET SDR
  *
- *   Captured 25 August 2026 · 54 requests
+ *   Captured 28 August 2026 · 57 requests
  *
  * This is the canonical side. Every request carries the submitter as a real
  * Slack mention, the request type, the impact and the stated priority — all of
@@ -63,6 +63,9 @@ const CAPTURED: Captured[] = [
   { ch: "cams", at: "2026-07-20 11:24:33", by: "U04LVDK3A4Q", t: "Request", im: "Major slowdown", p: "High", r: "hey robby, when we auto convert ifcs, can it recognize dupes so that it doesnt create a separate account/contact? if it still needs to create it but it recognizes the dupe, can it label it as like \"Bob Smith 2\"? Also i know we talked about this but is there a way to fix the way those addresses come in?" },
 
   /* -- #it-ticketing-production --------------------------------------------- */
+  { ch: "production", at: "2026-08-27 13:35:20", by: "U05BM5YMR26", t: "Outage", im: "Major slowdown", p: "High", replies: 7, r: "Bart for Tory Woods" },
+  { ch: "production", at: "2026-08-27 13:30:42", by: "U05BM5YMR26", t: "Outage", im: "Major slowdown", p: "High", replies: 7, r: "need copy of BART for Bonnie Lund look for the one that says use" },
+  { ch: "production", at: "2026-08-26 07:10:19", by: "U0B059NHQAE", t: "Request", im: "Cannot work at all", p: "High", replies: 3, r: "3.3 Bart Mike Beckett" },
   { ch: "production", at: "2026-08-25 06:13:50", by: "U08HUG1TBPH", t: "Support", im: "Major slowdown", p: "Medium", replies: 1, r: "New jobs need 3.3 barts:\n\nDrew Ashby\nSusanna Wellens\nPaula Ortlieb\nCharlie Taffet\nAnne Bailey" },
   { ch: "production", at: "2026-08-24 11:26:35", by: "U05J41SEW8P", t: "Support", im: "Minor inconvenience", p: "Medium", replies: 3, r: "Sarah Hess 3.3 Bart has no measures or numbers on crew sheet" },
   { ch: "production", at: "2026-08-22 08:01:28", by: "U01VBCVP38X", t: "Request", im: "Major slowdown", p: "High", replies: 2, r: "Add zaps to JZ landscaping and painting crew slack channel" },
@@ -140,6 +143,6 @@ export const SLACK_INTAKE: SlackIntakeMessage[] = CAPTURED.map((row) => {
 export const SLACK_CAPTURE_META = {
   workspace: "kindhomesolutions.slack.com",
   channels: Object.values(CHANNELS).map((c) => c.name),
-  capturedAt: "2026-08-25T00:00:00.000Z",
+  capturedAt: "2026-08-28T00:00:00.000Z",
   messageCount: CAPTURED.length,
 } as const;

@@ -101,6 +101,33 @@ export function DiagramNode({ data, selected }: NodeProps<Node<DiagramNodeData>>
     );
   }
 
+  // A sticky is deliberately the least formal thing on any canvas: no icon, no
+  // border, a square-ish block of colour that reads as handwriting rather than
+  // documentation. Whiteboards are made almost entirely of these.
+  if (meta.shape === "sticky") {
+    return (
+      <div
+        className={cn(
+          "relative flex min-h-28 w-44 items-start rounded-sm bg-warning-bg px-3 py-2.5 shadow-sm",
+          "border-b-2 border-warning-border/60",
+          ring,
+        )}
+      >
+        {handles}
+        <div className="min-w-0">
+          <p className="text-[12px] leading-4.5 font-medium break-words text-fg">
+            {data.label}
+          </p>
+          {data.description && (
+            <p className="mt-1 text-[10px] leading-3.5 break-words text-fg-muted">
+              {data.description}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (meta.shape === "note") {
     return (
       <div

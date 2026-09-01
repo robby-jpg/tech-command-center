@@ -1,9 +1,6 @@
 "use client";
 
 import * as React from "react";
-import type { WorkspaceSnapshot } from "@/lib/data/types";
-import { WorkspaceProvider } from "@/lib/store/workspace-store";
-import { TooltipProvider } from "@/components/ui/primitives";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { CommandPalette } from "./command-palette";
@@ -23,23 +20,14 @@ export function useChrome(): ChromeContext {
   return ctx;
 }
 
-export function AppChrome({
-  snapshot,
-  children,
-}: {
-  snapshot: WorkspaceSnapshot;
-  children: React.ReactNode;
-}) {
-  return (
-    <WorkspaceProvider initial={snapshot}>
-      <TooltipProvider delayDuration={280} skipDelayDuration={120}>
-        <ChromeShell>{children}</ChromeShell>
-      </TooltipProvider>
-    </WorkspaceProvider>
-  );
-}
-
-function ChromeShell({ children }: { children: React.ReactNode }) {
+/**
+ * The Tech Department's own navigation: sidebar, header, palette, quick create.
+ *
+ * Wraps the Command Center routes only. Workspace state lives above it in
+ * <AppProviders> so that the Employee Portal can read the same data without
+ * inheriting any of this.
+ */
+export function AppChrome({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [createMode, setCreateMode] = React.useState<QuickCreateMode>("ticket");

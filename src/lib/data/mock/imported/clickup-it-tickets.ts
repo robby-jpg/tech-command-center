@@ -4,7 +4,7 @@ import type { ClickUpTask } from "@/lib/data/import/clickup";
  * A capture of the real IT Tickets folder in ClickUp.
  *
  *   Workspace 9017052896 → Kind Home Development → IT Tickets
- *   Captured 25 August 2026 · 200 tickets spanning 2 May – 24 August 2026
+ *   Captured 28 August 2026 · 205 tickets spanning 2 May – 27 August 2026
  *
  * Stored in a compact shape because the full ClickUp payload repeats the same
  * assignee and a derivable URL on every row. `expand()` restores the shape the
@@ -60,6 +60,11 @@ function expand(rows: Captured[]): ClickUpTask[] {
 
 const CAPTURED: Captured[] = [
   // ---- August 2026 ---------------------------------------------------------
+  { i: "86e30gee8", n: "Bart for Tory Woods", s: "recieved", l: "PROD", d: "1787862920000", c: null },
+  { i: "86e30gc5n", n: "need copy of BART for Bonnie Lund look for the one that says use", s: "recieved", l: "PROD", d: "1787862642000", c: null },
+  { i: "86e308bfk", n: "TICKET SUBMITTED BY @jonathan.keller\n\n*Request Type:*\nOutage\n*Request:* \nRobby, I'm reviewing the PM scorecard right now, and the formulas for paint profit seem to be wrong. Wanted to confirm with you because you understand it better. \nThe Service Fee amounts should be removed from Final Paint Price AND Gross Profit Dollars before determining GP%. It seems like it's only removing it from GPD, which is artificially decreasing profit %, which is what we needed to avoid.\n*Impact:*\nCannot work at all, Major slowdown\n*Priority:*\nHigh", s: "recieved", l: "LEAD", d: "1787843033000", c: null },
+  { i: "86e308b48", n: "Robby, I'm reviewing the PM scorecard right now, and the formulas for paint profit seem to be wrong. Wanted to confirm with you because you understand it better.", s: "recieved", l: "PROD", d: "1787842984000", c: null },
+  { i: "86e2zp88u", n: "3.3 Bart Mike Beckett", s: "recieved", l: "PROD", d: "1787753419000", c: null },
   { i: "86e2z80mh", n: "ive had two ifc issues in the last day. one ifc for christina Zaidi didnt come through at all from spotio. chloe did note aaron did it right and she was with him, so it wasnt that. then rennee bishop didnt convert through. not the same issues as with the other ones, so unclear why it didnt", s: "recieved", l: "CAM", d: "1787676090000", c: null },
   { i: "86e2z335c", n: "New jobs need 3.3 barts:", s: "recieved", l: "PROD", d: "1787663630000", c: null },
   { i: "86e2yuubb", n: "mikel said to do this now", s: "recieved", l: "CAM", d: "1787606537000", c: null },
@@ -271,6 +276,6 @@ export const CLICKUP_CAPTURE_META = {
   workspaceId: "9017052896",
   space: "Kind Home Development",
   folder: "IT Tickets",
-  capturedAt: "2026-08-25T00:00:00.000Z",
+  capturedAt: "2026-08-27T00:00:00.000Z",
   taskCount: CAPTURED.length,
 } as const;

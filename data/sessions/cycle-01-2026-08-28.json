@@ -1,0 +1,67 @@
+{
+  "id": "ses-1-2026-08-28",
+  "slug": "cycle-1",
+  "cycle": 1,
+  "title": "Leadership session — cycle 1",
+  "kind": "discovery",
+  "heldAt": "2026-08-28T19:00:00.000Z",
+  "stage": "build",
+  "facilitatorId": "u-robby",
+  "attendeeIds": [
+    "u-robby",
+    "u-kendall"
+  ],
+  "demoedWhat": "",
+  "responses": [
+    {
+      "department": "leadership",
+      "respondentId": "u-kendall",
+      "answers": [
+        {
+          "questionId": "data-use",
+          "answer": ""
+        },
+        {
+          "questionId": "decisions",
+          "answer": ""
+        },
+        {
+          "questionId": "more-work",
+          "answer": ""
+        },
+        {
+          "questionId": "less-work",
+          "answer": ""
+        },
+        {
+          "questionId": "capacity",
+          "answer": ""
+        },
+        {
+          "questionId": "own-capacity",
+          "answer": ""
+        },
+        {
+          "questionId": "team-capacity",
+          "answer": ""
+        },
+        {
+          "questionId": "success",
+          "answer": ""
+        }
+      ],
+      "resources": [],
+      "painPoints": []
+    }
+  ],
+  "followUps": [],
+  "promotions": [],
+  "transcript": "",
+  "proposals": [],
+  "lastAnalysis": null,
+  "summary": "",
+  "privateAnalysis": "",
+  "templateVersion": 1,
+  "createdAt": "2026-08-28T18:40:49.950Z",
+  "updatedAt": "2026-08-28T21:11:26.084Z"
+}

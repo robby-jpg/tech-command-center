@@ -5,11 +5,14 @@ import {
   FolderKanban,
   LayoutDashboard,
   Map,
+  MessagesSquare,
   Network,
   Route,
   Server,
   Settings,
+  StickyNote,
   Ticket,
+  Users,
   Workflow,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -24,6 +27,12 @@ export type NavItem = {
   description: string;
   /** The question the page exists to answer. */
   purpose?: string;
+  /**
+   * Leaves the Command Center shell rather than rendering inside it. The
+   * Employee Portal is a different application that happens to share a data
+   * layer, so the sidebar links out to it rather than pretending it is a page.
+   */
+  external?: boolean;
 };
 
 export type NavGroup = { label: string; items: NavItem[] };
@@ -68,6 +77,24 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "Brainstorming",
+    items: [
+      {
+        href: "/brainstorming/sessions",
+        label: "Discovery Sessions",
+        icon: MessagesSquare,
+        description: "What the business told us, and what the loop did about it",
+        purpose: "What do they actually need?",
+      },
+      {
+        href: "/brainstorming/whiteboards",
+        label: "Whiteboards",
+        icon: StickyNote,
+        description: "Thinking out loud, before it is worth drawing properly",
+      },
+    ],
+  },
+  {
     label: "Infrastructure",
     items: [
       {
@@ -98,6 +125,20 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Knowledge Base",
         icon: BookOpen,
         description: "How technology at Kind Home actually works",
+      },
+    ],
+  },
+  {
+    label: "The Company",
+    items: [
+      {
+        href: "/portal",
+        label: "Employee Portal",
+        icon: Users,
+        description: "What the rest of the company sees of its own requests",
+        purpose: "What does everyone else see?",
+        /** Leaves the Command Center shell entirely; see app/(portal). */
+        external: true,
       },
     ],
   },

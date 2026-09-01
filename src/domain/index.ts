@@ -14,5 +14,7 @@ export * from "./ticket";
 export * from "./sla";
 export * from "./project";
 export * from "./diagram";
+export * from "./session";
 export * from "./knowledge";
 export * from "./activity";
+export * from "./portal";
